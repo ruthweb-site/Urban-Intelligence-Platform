@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Urban Intelligence Platform — Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background:#0f1720; color:#e6edf3;}
+  #sidebar { width: 340px; padding: 16px; overflow-y: auto; background:#111a24; box-sizing:border-box;}
+  #map { flex: 1; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .stat-box { background:#1c2632; border-radius:8px; padding:10px; margin-bottom:10px; }
+  .stat-box h2 { margin:0 0 6px 0; font-size:13px; color:#8fa3b8; text-transform:uppercase; }
+  .stat-box p { margin:0; font-size:22px; font-weight:bold; }
+  .event-item { background:#1c2632; border-radius:6px; padding:8px; margin-bottom:6px; font-size:12px; }
+  .event-item b { color:#4da3ff; }
+  .badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; background:#2d3d4f; margin-left:4px;}
+  #controls { margin-bottom: 10px; }
+  button { background:#2d3d4f; color:#e6edf3; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; margin-right:4px; font-size:12px;}
+  button.active { background:#4da3ff; color:#04121f; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>Urban Intelligence Platform</h1>
+  <p style="font-size:12px;color:#8fa3b8;">Live bus-fleet sensing dashboard (demo)</p>
+
+  <div id="controls">
+    <button onclick="toggleHeatmap()" id="heatBtn">Toggle Heatmap</button>
+    <button onclick="fetchAll()">Refresh</button>
+  </div>
+
+  <div class="stat-box">
+    <h2>Total Events</h2>
+    <p id="statTotal">0</p>
+  </div>
+  <div class="stat-box">
+    <h2>By Type</h2>
+    <p id="statByType" style="font-size:12px; font-weight:normal;">-</p>
+  </div>
+
+  <h2 style="font-size:13px; color:#8fa3b8; text-transform:uppercase;">Live Event Feed</h2>
+  <div id="feed"></div>
+</div>
+
+<div id="map"></div>
+
+<script>
+// EDIT THESE to your demo city's coordinates
+const DEFAULT_LAT = 19.4560;
+const DEFAULT_LNG = 72.8110;
+const API_BASE = "http://localhost:5000";
+
+const map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const markersLayer = L.layerGroup().addTo(map);
+let heatLayer = null;
+let heatVisible = false;
+
+const colorFor = (type) => ({
+  pothole: "#e74c3c",
+  road_damage: "#e67e22",
+  waterlogging: "#3498db",
+  vehicle_count: "#95a5a6",
+  congestion: "#f1c40f",
+  anpr_alert: "#9b59b6",
+  rash_driving: "#e74c3c",
+}[type] || "#4da3ff");
+
+async function fetchEvents() {
+  const res = await fetch(`${API_BASE}/api/events`);
+  const events = await res.json();
+  markersLayer.clearLayers();
+  const feedDiv = document.getElementById('feed');
+  feedDiv.innerHTML = "";
+  events.slice(0, 30).forEach(ev => {
+    L.circleMarker([ev.latitude, ev.longitude], {
+      radius: 7, color: colorFor(ev.event_type), fillColor: colorFor(ev.event_type), fillOpacity: 0.8
+    }).bindPopup(
+      `<b>${ev.event_type}</b><br/>Confidence: ${(ev.confidence*100).toFixed(0)}%<br/>Bus: ${ev.bus_id}<br/>${ev.timestamp}`
+    ).addTo(markersLayer);
+
+    const div = document.createElement('div');
+    div.className = 'event-item';
+    div.innerHTML = `<b>${ev.event_type}</b><span class="badge">${(ev.confidence*100).toFixed(0)}%</span><br/>${ev.bus_id} · ${new Date(ev.timestamp).toLocaleTimeString()}`;
+    feedDiv.appendChild(div);
+  });
+}
+
+async function fetchHeatmap() {
+  const res = await fetch(`${API_BASE}/api/events/heatmap`);
+  const points = await res.json();
+  const heatPoints = points.map(p => [p.latitude, p.longitude, p.weight]);
+  if (heatLayer) map.removeLayer(heatLayer);
+  heatLayer = L.heatLayer(heatPoints, { radius: 25 });
+  if (heatVisible) heatLayer.addTo(map);
+}
+
+async function fetchStats() {
+  const res = await fetch(`${API_BASE}/api/stats`);
+  const stats = await res.json();
+  document.getElementById('statTotal').innerText = stats.total_events;
+  document.getElementById('statByType').innerText =
+    Object.entries(stats.by_type).map(([k,v]) => `${k}: ${v}`).join(' · ') || '-';
+}
+
+function toggleHeatmap() {
+  heatVisible = !heatVisible;
+  document.getElementById('heatBtn').classList.toggle('active', heatVisible);
+  if (!heatLayer) return;
+  if (heatVisible) heatLayer.addTo(map); else map.removeLayer(heatLayer);
+}
+
+async function fetchAll() {
+  await Promise.all([fetchEvents(), fetchHeatmap(), fetchStats()]);
+}
+
+fetchAll();
+setInterval(fetchAll, 4000); // poll every 4s for "live" feel
+</script>
+</body>
+</html>

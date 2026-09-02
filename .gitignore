@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+backend/database/events.db
+*.pt
+.DS_Store
+node_modules/
+*.mp4
