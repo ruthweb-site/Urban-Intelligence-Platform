@@ -4,10 +4,15 @@ Run: python app.py
 Serves on http://localhost:5000
 """
 from flask import Flask, request, jsonify
-from database.db import init_db, insert_event, get_events, get_heatmap_points, get_stats
+from database.db import (
+    init_db, init_mongo, insert_event, get_events, get_heatmap_points, get_stats,  # added mongo DB connection
+    # MongoDB functions (new)
+    insert_event_mongo, create_ticket, get_tickets, update_ticket,
+    get_buses, get_impact, get_road_health )
 
 app = Flask(__name__)
 init_db()
+init_mongo()   
 
 
 @app.after_request
@@ -55,6 +60,57 @@ def stats():
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
+# ═══════════════════════════════════════════════
+#  NEW ENDPOINTS (MongoDB)
+# ═══════════════════════════════════════════════
+
+@app.route("/api/tickets", methods=["POST"])
+def create_ticket_route():
+    data = request.get_json(force=True)
+    if not data or not data.get("event_id"):
+        return jsonify({"error": "event_id is required"}), 400
+    try:
+        ticket = create_ticket(data)
+        return jsonify(ticket), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+
+
+@app.route("/api/tickets", methods=["GET"])
+def get_tickets_route():
+    tickets = get_tickets(
+        status=request.args.get("status"),
+        department=request.args.get("department"),
+        assigned_to=request.args.get("assigned_to")
+    )
+    return jsonify(tickets)
+
+
+@app.route("/api/tickets/<ticket_id>", methods=["PATCH"])
+def update_ticket_route(ticket_id):
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    try:
+        ticket = update_ticket(ticket_id, data)
+        return jsonify(ticket), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+
+
+@app.route("/api/buses", methods=["GET"])
+def get_buses_route():
+    return jsonify(get_buses())
+
+
+@app.route("/api/impact", methods=["GET"])
+def get_impact_route():
+    return jsonify(get_impact())
+
+
+@app.route("/api/road-health", methods=["GET"])
+def get_road_health_route():
+    return jsonify(get_road_health())
 
 
 if __name__ == "__main__":
