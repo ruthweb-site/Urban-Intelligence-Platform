@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Urban Intelligence Platform — Bus AI Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            background: #0f1720;
+            color: #e6edf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #device {
+            width: 420px;
+            background: #111a24;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #1c2632;
+        }
+
+        #device h1 {
+            font-size: 16px;
+            margin: 0 0 2px 0;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        #device .sub {
+            text-align: center;
+            font-size: 11px;
+            color: #8fa3b8;
+            margin-bottom: 12px;
+        }
+
+        #video-wrap {
+            position: relative;
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            display: block;
+        }
+
+        #alert-box {
+            position: absolute;
+            border: 3px solid #e74c3c;
+            border-radius: 4px;
+            display: none;
+            box-shadow: 0 0 12px rgba(231, 76, 60, 0.8);
+        }
+
+        #alert-label {
+            position: absolute;
+            background: #e74c3c;
+            color: #fff;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: none;
+            white-space: nowrap;
+        }
+
+        #alert-banner {
+            display: none;
+            margin-top: 10px;
+            background: #3a1414;
+            border: 1px solid #e74c3c;
+            color: #ff8a80;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0.6;
+            }
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 4px 0;
+            border-bottom: 1px solid #1c2632;
+        }
+
+        .info-row span:first-child {
+            color: #8fa3b8;
+        }
+
+        .info-row span:last-child {
+            font-weight: bold;
+        }
+
+        #status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            margin-right: 5px;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        #stats {
+            margin-top: 12px;
+        }
+
+        .stat-box {
+            background: #1c2632;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-top: 8px;
+        }
+
+        .stat-box h2 {
+            margin: 0 0 4px 0;
+            font-size: 11px;
+            color: #8fa3b8;
+            text-transform: uppercase;
+        }
+
+        .stat-box p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="device">
+        <h1>🚌 URBAN AI BUS MONITOR</h1>
+        <div class="sub">Front Camera Feed — Live Pothole Detection</div>
+
+        <div id="video-wrap">
+            <video id="feed" autoplay loop muted playsinline>
+                <source src="bus_camera.mp4.mp4" type="video/webm">
+            </video>
+            <div id="alert-box"></div>
+            <div id="alert-label"></div>
+        </div>
+
+        <div id="alert-banner">🚨 POTHOLE DETECTED</div>
+
+        <div style="margin-top:12px;">
+            <div class="info-row"><span>Bus ID</span><span id="busId">BUS-102</span></div>
+            <div class="info-row"><span>Route</span><span id="routeId">ROUTE-18</span></div>
+            <div class="info-row"><span>Camera</span><span id="camId">CAM-01</span></div>
+            <div class="info-row"><span>Status</span><span><span id="status-dot"></span>MONITORING</span></div>
+        </div>
+
+        <div id="stats">
+            <div class="stat-box">
+                <h2>Potholes Detected (this bus)</h2>
+                <p id="statCount">0</p>
+            </div>
+            <div class="stat-box">
+                <h2>Last Confidence</h2>
+                <p id="statConf">-</p>
+            </div>
+            <div class="stat-box">
+                <h2>Last Severity</h2>
+                <p id="statSeverity">-</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:5000";
+        const BUS_FILTER = "BUS-102";
+
+        // ---- TIME (in seconds) WHERE THE POTHOLE APPEARS IN THE VIDEO ----
+        // Adjust this to match roughly where the pothole is visible in your clip.
+        // Watch the video once and note the timestamp, then edit this value.
+        const ALERT_TIME_SECONDS = 7;
+        const ALERT_DURATION_SECONDS = 1.5;
+
+        const video = document.getElementById('feed');
+        const alertBox = document.getElementById('alert-box');
+        const alertLabel = document.getElementById('alert-label');
+        const alertBanner = document.getElementById('alert-banner');
+
+        let alertShownThisLoop = false;
+
+        video.addEventListener('timeupdate', () => {
+            const t = video.currentTime;
+
+            if (t >= ALERT_TIME_SECONDS && t <= ALERT_TIME_SECONDS + ALERT_DURATION_SECONDS) {
+                if (!alertShownThisLoop) {
+                    showAlert();
+                    alertShownThisLoop = true;
+                }
+            } else {
+                hideAlert();
+                if (t < ALERT_TIME_SECONDS) alertShownThisLoop = false;
+            }
+        });
+
+        function showAlert() {
+            const w = video.clientWidth, h = video.clientHeight;
+            // Approximate box position — adjust % values to match where the pothole appears
+            const boxLeft = w * 0.35, boxTop = h * 0.55, boxW = w * 0.3, boxH = h * 0.2;
+
+            alertBox.style.left = boxLeft + "px";
+            alertBox.style.top = boxTop + "px";
+            alertBox.style.width = boxW + "px";
+            alertBox.style.height = boxH + "px";
+            alertBox.style.display = "block";
+
+            alertLabel.style.left = boxLeft + "px";
+            alertLabel.style.top = (boxTop - 18) + "px";
+            alertLabel.innerText = "POTHOLE";
+            alertLabel.style.display = "block";
+
+            alertBanner.style.display = "block";
+        }
+
+        function hideAlert() {
+            alertBox.style.display = "none";
+            alertLabel.style.display = "none";
+            alertBanner.style.display = "none";
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/events`);
+                const events = await res.json();
+                const busEvents = events.filter(e => e.bus_id === BUS_FILTER && e.event_type === "pothole");
+
+                document.getElementById('statCount').innerText = busEvents.length;
+
+                if (busEvents.length > 0) {
+                    const latest = busEvents[0]; // assumes API returns newest first
+                    document.getElementById('statConf').innerText = (latest.confidence * 100).toFixed(0) + "%";
+                    document.getElementById('statSeverity').innerText = latest.extra?.severity || "-";
+                }
+            } catch (err) {
+                console.error("Could not fetch stats:", err);
+            }
+        }
+
+        fetchStats();
+        setInterval(fetchStats, 4000);
+    </script>
+
+</body>
+
+</html>
