@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 
 try:
+    # pyrefly: ignore [missing-import]
     from pymongo import MongoClient, DESCENDING
 except ImportError:
     MongoClient = None
