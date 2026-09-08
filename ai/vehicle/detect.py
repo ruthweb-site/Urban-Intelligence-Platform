@@ -53,26 +53,30 @@ while True:
         print(f"Total: {total}")
         print(f"Traffic Density: {density}")
 
+        # CHANGED: bundle all 4 vehicle classes into ONE event instead of sending
+        # one event per class. Fewer DB rows, one checkpoint = one row for frontend.
         now_iso = datetime.now(timezone.utc).isoformat()
-        for vehicle_class, count in counts.items():
-            payload = {
-                "event_type": "vehicle_count",
-                "confidence": 0.9,
-                "latitude": LATITUDE,
-                "longitude": LONGITUDE,
-                "timestamp": now_iso,
-                "bus_id": BUS_ID,
-                "extra": {
-                    "vehicle_class": vehicle_class,
-                    "count": count,
-                    "traffic_density": density
-                }
+        payload = {
+            "event_type": "vehicle_count",
+            "confidence": 0.9,
+            "latitude": LATITUDE,
+            "longitude": LONGITUDE,
+            "timestamp": now_iso,
+            "bus_id": BUS_ID,
+            "extra": {
+                "cars": counts.get("car", 0),
+                "motorcycles": counts.get("motorcycle", 0),
+                "buses": counts.get("bus", 0),
+                "trucks": counts.get("truck", 0),
+                "total": total,
+                "traffic_density": density
             }
-            try:
-                response = requests.post(BACKEND_URL, json=payload, timeout=3)
-                print(f"  Sent {vehicle_class} event -> status {response.status_code}")
-            except requests.exceptions.RequestException as e:
-                print(f"  Failed to send {vehicle_class} event: {e}")
+        }
+        try:
+            response = requests.post(BACKEND_URL, json=payload, timeout=3)
+            print(f"  Sent checkpoint event -> status {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"  Failed to send checkpoint event: {e}")
 
         print()
 
