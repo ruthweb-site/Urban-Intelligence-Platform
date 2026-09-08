@@ -1,128 +1,515 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Urban Intelligence Platform — Dashboard</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background:#0f1720; color:#e6edf3;}
-  #sidebar { width: 340px; padding: 16px; overflow-y: auto; background:#111a24; box-sizing:border-box;}
-  #map { flex: 1; }
-  h1 { font-size: 18px; margin-bottom: 4px; }
-  .stat-box { background:#1c2632; border-radius:8px; padding:10px; margin-bottom:10px; }
-  .stat-box h2 { margin:0 0 6px 0; font-size:13px; color:#8fa3b8; text-transform:uppercase; }
-  .stat-box p { margin:0; font-size:22px; font-weight:bold; }
-  .event-item { background:#1c2632; border-radius:6px; padding:8px; margin-bottom:6px; font-size:12px; }
-  .event-item b { color:#4da3ff; }
-  .badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; background:#2d3d4f; margin-left:4px;}
-  #controls { margin-bottom: 10px; }
-  button { background:#2d3d4f; color:#e6edf3; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; margin-right:4px; font-size:12px;}
-  button.active { background:#4da3ff; color:#04121f; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Urban Intelligence Platform — Dashboard</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <!-- Dashboard CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div id="sidebar">
-  <h1>Urban Intelligence Platform</h1>
-  <p style="font-size:12px;color:#8fa3b8;">Live bus-fleet sensing dashboard (demo)</p>
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
 
-  <div id="controls">
-    <button onclick="toggleHeatmap()" id="heatBtn">Toggle Heatmap</button>
-    <button onclick="fetchAll()">Refresh</button>
+  <aside id="sidebar">
+
+    <div class="sidebar-header">
+      <h1>Urban Intelligence Platform</h1>
+
+      <p class="subtitle">
+        Live bus-fleet sensing dashboard (demo)
+      </p>
+    </div>
+
+
+    <!-- Controls -->
+
+    <div id="controls">
+      <button
+        type="button"
+        onclick="toggleHeatmap()"
+        id="heatBtn"
+      >
+        Toggle Heatmap
+      </button>
+
+      <button
+        type="button"
+        onclick="fetchAll()"
+      >
+        Refresh
+      </button>
+    </div>
+
+
+    <!-- Total Events -->
+
+    <div class="stat-box total-events-box">
+      <h2>Total Events</h2>
+
+      <p id="statTotal">0</p>
+    </div>
+
+
+    <!-- =========================
+         IMPACT DASHBOARD
+    ========================== -->
+
+    <section class="impact-section">
+
+      <h2 class="section-title">
+        Impact Dashboard
+      </h2>
+
+      <div class="impact-grid">
+
+        <div class="impact-card">
+          <span class="impact-icon">🚌</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactBuses">—</p>
+            <span class="impact-label">Buses Monitoring</span>
+          </div>
+        </div>
+
+
+        <div class="impact-card">
+          <span class="impact-icon">🛣️</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactRoadKm">—</p>
+            <span class="impact-label">Road KM Monitored</span>
+          </div>
+        </div>
+
+
+        <div class="impact-card">
+          <span class="impact-icon">🚨</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactIssues">—</p>
+            <span class="impact-label">Issues Detected</span>
+          </div>
+        </div>
+
+
+        <div class="impact-card">
+          <span class="impact-icon">🎫</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactTickets">—</p>
+            <span class="impact-label">Tickets Created</span>
+          </div>
+        </div>
+
+
+        <div class="impact-card">
+          <span class="impact-icon">✅</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactResolved">—</p>
+            <span class="impact-label">Issues Resolved</span>
+          </div>
+        </div>
+
+
+        <div class="impact-card">
+          <span class="impact-icon">⏱️</span>
+
+          <div class="impact-content">
+            <p class="impact-value" id="impactResponse">—</p>
+            <span class="impact-label">Avg Response Time</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
+         EVENTS BY TYPE
+    ========================== -->
+
+    <section class="stat-box by-type-box">
+
+      <h2>By Type</h2>
+
+      <div id="statByType">
+        -
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         ROAD HEALTH
+    ========================== -->
+
+    <section class="road-health-section">
+
+      <h2 class="section-title">
+        Road Health
+      </h2>
+
+      <div class="road-health-card">
+
+        <div class="health-header">
+          <span class="corridor-title" id="roadCorridor">Main Corridor</span>
+          <span class="health-score-badge" id="roadHealthScore">—</span>
+        </div>
+
+        <div class="road-health-grid">
+
+          <div class="rh-item">
+            <span class="rh-label">Hazards (30d)</span>
+            <span class="rh-value" id="roadHazards">—</span>
+          </div>
+
+          <div class="rh-item">
+            <span class="rh-label">Trend</span>
+            <span class="rh-value" id="roadTrend">—</span>
+          </div>
+
+        </div>
+
+        <div class="rh-recommendation-box">
+          <span class="rh-label">Recommendation</span>
+          <p class="rh-recommendation-text" id="roadRecommendation">—</p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         LIVE EVENT FEED
+    ========================== -->
+
+    <section class="feed-section">
+
+      <h2 class="section-title">
+        Live Event Feed
+      </h2>
+
+      <div id="feed"></div>
+
+    </section>
+
+  </aside>
+
+
+  <!-- =========================
+       MAP
+  ========================== -->
+
+  <main id="map"></main>
+
+
+  <!-- =========================
+       EVENT DETAILS MODAL
+  ========================== -->
+
+  <div id="eventModal">
+
+    <div class="modal-box">
+
+      <div class="modal-header">
+
+        <h2 id="eventTitle">
+          Event Details
+        </h2>
+
+        <button
+          type="button"
+          class="close-btn"
+          onclick="closeEventModal()"
+          aria-label="Close event details"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">Event ID</span>
+
+        <span
+          class="detail-value"
+          id="detailId"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">Event Type</span>
+
+        <span
+          class="detail-value"
+          id="detailType"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">Bus ID</span>
+
+        <span
+          class="detail-value"
+          id="detailBus"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">Confidence</span>
+
+        <span
+          class="detail-value"
+          id="detailConfidence"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">AI Severity</span>
+
+        <span
+          class="detail-value"
+          id="detailSeverity"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">GPS</span>
+
+        <span
+          class="detail-value"
+          id="detailGPS"
+        >
+          -
+        </span>
+      </div>
+
+
+      <div class="detail-row">
+        <span class="detail-label">Timestamp</span>
+
+        <span
+          class="detail-value"
+          id="detailTimestamp"
+        >
+          -
+        </span>
+      </div>
+
+
+      <!-- Evidence -->
+
+      <div id="evidenceContainer">
+
+        <p class="evidence-title">
+          Evidence
+        </p>
+
+        <img
+          id="evidenceImage"
+          alt="Evidence Image"
+        >
+
+        <p id="noEvidence">
+          Evidence image not available.
+        </p>
+
+      </div>
+
+
+      <!-- Actions -->
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          onclick="viewEvidence()"
+        >
+          View Evidence
+        </button>
+
+        <button
+          type="button"
+          class="primary-btn"
+          onclick="openTicketModal()"
+        >
+          Create Ticket
+        </button>
+
+      </div>
+
+    </div>
+
   </div>
 
-  <div class="stat-box">
-    <h2>Total Events</h2>
-    <p id="statTotal">0</p>
+
+  <!-- =========================
+       CREATE TICKET MODAL
+  ========================== -->
+
+  <div id="ticketModal">
+
+    <div class="modal-box ticket-box">
+
+      <div class="modal-header">
+
+        <h2>
+          Create Maintenance Ticket
+        </h2>
+
+        <button
+          type="button"
+          class="close-btn"
+          onclick="closeTicketModal()"
+          aria-label="Close ticket form"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <!-- Department -->
+
+      <div class="form-group">
+
+        <label for="ticketDepartment">
+          Department
+        </label>
+
+        <select id="ticketDepartment">
+
+          <option value="Road Maintenance">
+            Road Maintenance
+          </option>
+
+          <option value="Traffic Department">
+            Traffic Department
+          </option>
+
+          <option value="Municipal Corporation">
+            Municipal Corporation
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- AI Severity -->
+
+      <div class="form-group">
+
+        <label for="ticketSeverity">
+          AI Severity
+        </label>
+
+        <div
+          id="ticketSeverity"
+          class="severity-display"
+        >
+          -
+        </div>
+
+      </div>
+
+
+      <!-- Ticket Priority -->
+
+      <div class="form-group">
+
+        <label for="ticketPriority">
+          Ticket Priority
+        </label>
+
+        <select id="ticketPriority">
+
+          <option value="LOW">LOW</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="HIGH">HIGH</option>
+          <option value="CRITICAL">CRITICAL</option>
+
+        </select>
+
+      </div>
+
+
+      <!-- Notes -->
+
+      <div class="form-group">
+
+        <label for="ticketNotes">
+          Notes
+        </label>
+
+        <textarea
+          id="ticketNotes"
+          placeholder="Add maintenance notes..."
+        ></textarea>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="primary-btn create-ticket-btn"
+        onclick="createTicket()"
+      >
+        Create Ticket
+      </button>
+
+
+      <div
+        id="ticketStatus"
+        class="status-message"
+      ></div>
+
+    </div>
+
   </div>
-  <div class="stat-box">
-    <h2>By Type</h2>
-    <p id="statByType" style="font-size:12px; font-weight:normal;">-</p>
-  </div>
 
-  <h2 style="font-size:13px; color:#8fa3b8; text-transform:uppercase;">Live Event Feed</h2>
-  <div id="feed"></div>
-</div>
 
-<div id="map"></div>
+  <!-- Leaflet JS -->
 
-<script>
-// EDIT THESE to your demo city's coordinates
-const DEFAULT_LAT = 19.4560;
-const DEFAULT_LNG = 72.8110;
-const API_BASE = "http://localhost:5000";
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-const map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-const markersLayer = L.layerGroup().addTo(map);
-let heatLayer = null;
-let heatVisible = false;
+  <!-- Dashboard JavaScript -->
 
-const colorFor = (type) => ({
-  pothole: "#e74c3c",
-  road_damage: "#e67e22",
-  waterlogging: "#3498db",
-  vehicle_count: "#95a5a6",
-  congestion: "#f1c40f",
-  anpr_alert: "#9b59b6",
-  rash_driving: "#e74c3c",
-}[type] || "#4da3ff");
+  <script src="script.js"></script>
 
-async function fetchEvents() {
-  const res = await fetch(`${API_BASE}/api/events`);
-  const events = await res.json();
-  markersLayer.clearLayers();
-  const feedDiv = document.getElementById('feed');
-  feedDiv.innerHTML = "";
-  events.slice(0, 30).forEach(ev => {
-    L.circleMarker([ev.latitude, ev.longitude], {
-      radius: 7, color: colorFor(ev.event_type), fillColor: colorFor(ev.event_type), fillOpacity: 0.8
-    }).bindPopup(
-      `<b>${ev.event_type}</b><br/>Confidence: ${(ev.confidence*100).toFixed(0)}%<br/>Bus: ${ev.bus_id}<br/>${ev.timestamp}`
-    ).addTo(markersLayer);
-
-    const div = document.createElement('div');
-    div.className = 'event-item';
-    div.innerHTML = `<b>${ev.event_type}</b><span class="badge">${(ev.confidence*100).toFixed(0)}%</span><br/>${ev.bus_id} · ${new Date(ev.timestamp).toLocaleTimeString()}`;
-    feedDiv.appendChild(div);
-  });
-}
-
-async function fetchHeatmap() {
-  const res = await fetch(`${API_BASE}/api/events/heatmap`);
-  const points = await res.json();
-  const heatPoints = points.map(p => [p.latitude, p.longitude, p.weight]);
-  if (heatLayer) map.removeLayer(heatLayer);
-  heatLayer = L.heatLayer(heatPoints, { radius: 25 });
-  if (heatVisible) heatLayer.addTo(map);
-}
-
-async function fetchStats() {
-  const res = await fetch(`${API_BASE}/api/stats`);
-  const stats = await res.json();
-  document.getElementById('statTotal').innerText = stats.total_events;
-  document.getElementById('statByType').innerText =
-    Object.entries(stats.by_type).map(([k,v]) => `${k}: ${v}`).join(' · ') || '-';
-}
-
-function toggleHeatmap() {
-  heatVisible = !heatVisible;
-  document.getElementById('heatBtn').classList.toggle('active', heatVisible);
-  if (!heatLayer) return;
-  if (heatVisible) heatLayer.addTo(map); else map.removeLayer(heatLayer);
-}
-
-async function fetchAll() {
-  await Promise.all([fetchEvents(), fetchHeatmap(), fetchStats()]);
-}
-
-fetchAll();
-setInterval(fetchAll, 4000); // poll every 4s for "live" feel
-</script>
 </body>
+
 </html>

@@ -139,6 +139,11 @@ def process_pothole_frame(
 
     # Extract just the filename from the evidence path for portability
     evidence_filename = Path(evidence_image).name if evidence_image else None
+    image_base64_str = None
+    if evidence_image and Path(evidence_image).exists():
+        import base64
+        with open(evidence_image, "rb") as img_f:
+            image_base64_str = base64.b64encode(img_f.read()).decode("utf-8")
 
     for detection in detections:
         confidence = detection["confidence"]
@@ -152,6 +157,7 @@ def process_pothole_frame(
             "longitude": longitude,
             "timestamp": now,
             "bus_id": bus_id,
+            "image_base64": image_base64_str,
             # --- extended metadata via extra ---
             "extra": {
                 "severity": severity,

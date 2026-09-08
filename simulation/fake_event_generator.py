@@ -11,6 +11,7 @@ Run: python fake_event_generator.py
 import json
 import random
 import time
+import base64
 from datetime import datetime, timezone
 import os
 
@@ -32,19 +33,40 @@ EVENT_TYPES = [
     ("anpr_alert", {"plate_number": "MH04AB1234"}),
 ]
 
+EVIDENCE_DIR = os.path.join(
+    os.path.dirname(HERE),
+    "ai",
+    "pothole",
+    "evidence"
+)
 
 def make_event(point):
-    event_type, extra = random.choice(EVENT_TYPES)
-    return {
+   event_type, extra = random.choice(EVENT_TYPES)
+   image_base64 = None
+   if event_type == "pothole":
+        evidence_files = [
+            os.path.join(EVIDENCE_DIR, f)
+            for f in os.listdir(EVIDENCE_DIR)
+            if f.lower().endswith((".jpg", ".jpeg", ".png"))
+        ]
+
+        if evidence_files:
+            evidence_file = random.choice(evidence_files)
+
+            with open(evidence_file, "rb") as f:
+                image_base64 = base64.b64encode(
+                    f.read()
+                ).decode("utf-8")
+   return {
         "event_type": event_type,
         "confidence": round(random.uniform(0.65, 0.98), 2),
         "latitude": point["latitude"],
         "longitude": point["longitude"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "bus_id": BUS_ID,
+        "image_base64": image_base64,
         "extra": extra,
     }
-
 
 def main():
     print(f"Simulating {BUS_ID} driving along {len(ROUTE)} GPS points...")

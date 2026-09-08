@@ -94,23 +94,18 @@ def create_ticket_route():
     try:
         ticket = create_ticket(data)
         return jsonify(ticket), 201
-    except MongoUnavailableError:
-        return jsonify({"error": "MongoDB is unavailable"}), 503
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
 
 
 @app.route("/api/tickets", methods=["GET"])
 def get_tickets_route():
-    try:
-        tickets = get_tickets(
-            status=request.args.get("status"),
-            department=request.args.get("department"),
-            assigned_to=request.args.get("assigned_to")
-        )
-        return jsonify(tickets)
-    except MongoUnavailableError:
-        return jsonify({"error": "MongoDB is unavailable"}), 503
+    tickets = get_tickets(
+        status=request.args.get("status"),
+        department=request.args.get("department"),
+        assigned_to=request.args.get("assigned_to")
+    )
+    return jsonify(tickets)
 
 
 @app.route("/api/tickets/<ticket_id>", methods=["PATCH"])
