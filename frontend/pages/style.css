@@ -1,0 +1,713 @@
+/* =========================================
+   GLOBAL
+========================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  overflow: hidden;
+  background: #0f1720;
+  color: #e6edf3;
+}
+
+
+/* =========================================
+   SIDEBAR
+========================================= */
+
+#sidebar {
+  width: 360px;
+  min-width: 360px;
+  height: 100vh;
+  padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #111a24;
+  border-right: 1px solid #263443;
+  flex: 0 0 360px;
+}
+
+.sidebar-header {
+  width: 100%;
+}
+
+h1 {
+  font-size: 18px;
+  line-height: 1.25;
+  margin: 0 0 5px 0;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #8fa3b8;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+}
+
+
+/* =========================================
+   MAP
+========================================= */
+
+#map {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 100vh;
+}
+
+
+/* =========================================
+   CONTROLS
+========================================= */
+
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+button {
+  background: #2d3d4f;
+  color: #e6edf3;
+  border: none;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0;
+  font-size: 12px;
+}
+
+button:hover {
+  background: #3b4e62;
+}
+
+button.active {
+  background: #4da3ff;
+  color: #04121f;
+}
+
+.primary-btn {
+  background: #4da3ff;
+  color: #04121f;
+  font-weight: bold;
+}
+
+.primary-btn:hover {
+  background: #70b8ff;
+}
+
+
+/* =========================================
+   STAT BOX
+========================================= */
+
+.stat-box {
+  width: 100%;
+  background: #1c2632;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-box h2 {
+  margin: 0 0 7px 0;
+  font-size: 13px;
+  color: #8fa3b8;
+  text-transform: uppercase;
+}
+
+.stat-box > p {
+  margin: 0;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+
+/* =========================================
+   IMPACT DASHBOARD
+========================================= */
+
+.impact-section {
+  width: 100%;
+  margin-top: 16px;
+  margin-bottom: 10px;
+}
+
+.impact-section .section-title {
+  margin-top: 0;
+}
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.impact-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 9px;
+  background: #1c2632;
+  border: 1px solid #263443;
+  border-radius: 7px;
+}
+
+.impact-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.impact-content {
+  min-width: 0;
+}
+
+.impact-value {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.impact-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #8fa3b8;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+
+/* =========================================
+   SECTION TITLE
+========================================= */
+
+.section-title {
+  font-size: 13px;
+  color: #8fa3b8;
+  text-transform: uppercase;
+  margin: 16px 0 10px 0;
+}
+
+
+/* =========================================
+   BY TYPE
+========================================= */
+
+.by-type-box {
+  margin-top: 10px;
+}
+
+#statByType {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.type-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid #263443;
+}
+
+.type-name {
+  min-width: 0;
+  color: #dbe7f2;
+  text-transform: capitalize;
+}
+
+.type-count {
+  flex: 0 0 auto;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+
+/* =========================================
+   ROAD HEALTH
+========================================= */
+
+.road-health-section {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.road-health-card {
+  background: #1c2632;
+  border: 1px solid #263443;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #263443;
+}
+
+.corridor-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #e6edf3;
+  letter-spacing: 0.5px;
+}
+
+.health-score-badge {
+  background: #2d3d4f;
+  color: #4da3ff;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #34475a;
+}
+
+.road-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rh-item {
+  background: #111a24;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.rh-label {
+  display: block;
+  font-size: 10px;
+  color: #8fa3b8;
+  margin-bottom: 3px;
+}
+
+.rh-value {
+  font-size: 13px;
+  font-weight: bold;
+  color: #e6edf3;
+  text-transform: capitalize;
+}
+
+.rh-recommendation-box {
+  background: #111a24;
+  padding: 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.rh-recommendation-text {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: #c9d1d9;
+  line-height: 1.35;
+}
+
+
+/* =========================================
+   LIVE EVENT FEED
+========================================= */
+
+.feed-section {
+  width: 100%;
+}
+
+.feed-section .section-title {
+  margin-top: 16px;
+}
+
+.event-item {
+  width: 100%;
+  background: #1c2632;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  border-left: 4px solid #4da3ff;
+  transition: background 0.15s;
+}
+
+.event-item:hover {
+  background: #263443;
+}
+
+.event-item b {
+  color: #4da3ff;
+  font-size: 12px;
+}
+
+.event-meta {
+  margin-top: 4px;
+  color: #e6edf3;
+  line-height: 1.3;
+}
+
+
+/* =========================================
+   BADGES
+========================================= */
+
+.badge {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: 5px;
+  font-weight: bold;
+}
+
+.confidence-badge {
+  background: #2d3d4f;
+  color: #e6edf3;
+}
+
+.severity-critical {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.severity-high {
+  background: #9a3412;
+  color: #fed7aa;
+}
+
+.severity-medium {
+  background: #854d0e;
+  color: #fef08a;
+}
+
+.severity-low {
+  background: #166534;
+  color: #bbf7d0;
+}
+
+
+/* =========================================
+   MODAL BACKGROUND
+========================================= */
+
+#eventModal,
+#ticketModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.68);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================
+   MODAL BOX
+========================================= */
+
+.modal-box {
+  width: 430px;
+  max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #111a24;
+  border: 1px solid #34475a;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.5);
+}
+
+.ticket-box {
+  width: 430px;
+}
+
+
+/* =========================================
+   MODAL HEADER
+========================================= */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.close-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  font-size: 20px;
+  padding: 2px 8px;
+  margin: 0;
+}
+
+.close-btn:hover {
+  background: #263443;
+}
+
+
+/* =========================================
+   EVENT DETAILS
+========================================= */
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 9px 0;
+  border-bottom: 1px solid #263443;
+  font-size: 13px;
+}
+
+.detail-label {
+  color: #8fa3b8;
+}
+
+.detail-value {
+  text-align: right;
+  font-weight: bold;
+}
+
+
+/* =========================================
+   EVIDENCE
+========================================= */
+
+#evidenceContainer {
+  margin-top: 15px;
+}
+
+.evidence-title {
+  color: #8fa3b8;
+  font-size: 12px;
+  margin: 0 0 8px 0;
+}
+
+#evidenceImage {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: none;
+}
+
+#noEvidence {
+  background: #1c2632;
+  color: #8fa3b8;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin: 0;
+}
+
+
+/* =========================================
+   MODAL ACTIONS
+========================================= */
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.modal-actions button {
+  flex: 1;
+  margin: 0;
+}
+
+
+/* =========================================
+   TICKET FORM
+========================================= */
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  color: #8fa3b8;
+  margin-bottom: 6px;
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  background: #1c2632;
+  color: #e6edf3;
+  border: 1px solid #34475a;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 13px;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: 1px solid #4da3ff;
+  border-color: #4da3ff;
+}
+
+.form-group textarea {
+  min-height: 75px;
+  resize: vertical;
+}
+
+
+/* =========================================
+   AI SEVERITY DISPLAY
+========================================= */
+
+.severity-display {
+  background: #1c2632;
+  border: 1px solid #34475a;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+
+/* =========================================
+   CREATE TICKET BUTTON
+========================================= */
+
+.create-ticket-btn {
+  width: 100%;
+  padding: 9px;
+  margin: 0;
+}
+
+.status-message {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #8fa3b8;
+}
+
+
+/* =========================================
+   BUS MAP MARKERS
+========================================= */
+
+.bus-marker-icon {
+  background: transparent;
+  border: none;
+}
+
+.bus-marker-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #0b131e;
+  color: #4da3ff;
+  border: 1.5px solid #4da3ff;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.bus-marker-pin:hover {
+  transform: scale(1.08);
+  background: #111a24;
+  border-color: #70b8ff;
+}
+
+.bus-marker-pin .bus-icon {
+  font-size: 13px;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 800px) {
+  body {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  #sidebar {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: 55vh;
+    flex: none;
+  }
+
+  #map {
+    width: 100%;
+    height: 45vh;
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 420px) {
+  #sidebar {
+    padding: 12px;
+  }
+
+  .impact-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .impact-card {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .impact-icon {
+    font-size: 16px;
+  }
+
+  .impact-value {
+    font-size: 16px;
+  }
+
+  .impact-label {
+    font-size: 9px;
+  }
+}

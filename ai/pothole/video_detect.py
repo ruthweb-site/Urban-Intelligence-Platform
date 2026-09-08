@@ -84,6 +84,10 @@ def process_video(video_path):
             annotated_frame = result.plot()
             cv2.imwrite(str(evidence_file), annotated_frame)
 
+            import base64
+            _, buffer = cv2.imencode('.jpg', annotated_frame)
+            img_b64 = base64.b64encode(buffer).decode('utf-8')
+
             payload = {
                 "event_type": "pothole",
                 "confidence": round(score, 3),
@@ -91,7 +95,7 @@ def process_video(video_path):
                 "longitude": GPS_LNG,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "bus_id": BUS_ID,
-                "image_base64": None,
+                "image_base64": img_b64,
                 "extra": {
                     "severity": severity_from_confidence(score),
                     "route_id": ROUTE_ID,
