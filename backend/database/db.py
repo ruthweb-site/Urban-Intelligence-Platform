@@ -69,6 +69,16 @@ def insert_event(data):
     if not img_b64:
         extra = data.get("extra", {})
         ev_path = extra.get("evidence_image") if isinstance(extra, dict) else None
+        event_type = data.get("event_type", "")
+
+        # Mapping of event types -> fallback evidence images
+        EVIDENCE_MAP = {
+            "pothole": "pothole.jpg",
+            "road_damage": "pothole.jpg",
+            "vehicle_count": "vehicle_congestion.jpg",
+            "congestion": "vehicle_congestion.jpg",
+            "anpr_alert": "anpr_alert.jpg",
+        }
 
         candidates = []
         if ev_path:
@@ -77,12 +87,15 @@ def insert_event(data):
                 os.path.join(os.path.dirname(__file__), "..", ev_path),
                 os.path.join(os.path.dirname(__file__), ev_path),
             ])
-        if data.get("event_type") == "pothole":
+
+        fallback_filename = EVIDENCE_MAP.get(event_type)
+        if fallback_filename:
+            db_dir = os.path.dirname(__file__)
             candidates.extend([
-                os.path.join(os.path.dirname(__file__), "..", "pothole.jpg"),
-                os.path.join(os.path.dirname(__file__), "pothole.jpg"),
-                os.path.join(os.path.dirname(__file__), "..", "frontend", "pages", "pothole.jpg"),
-                "pothole.jpg"
+                os.path.join(db_dir, "..", fallback_filename),
+                os.path.join(db_dir, fallback_filename),
+                os.path.join(db_dir, "..", "frontend", "pages", fallback_filename),
+                fallback_filename,
             ])
 
         for path in candidates:

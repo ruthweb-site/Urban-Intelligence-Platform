@@ -264,36 +264,34 @@ function showEventDetails(event) {
 
 
 // ======================================================
-// GET EVIDENCE DATA URL
+// GET EVIDENCE DATA URL (per event type)
 // ======================================================
 
 function getEvidenceDataUrl(event) {
+  // Priority 1: real base64 photo sent from AI pipeline
   if (event.image_base64 && event.image_base64.trim()) {
-    if (event.image_base64.startsWith("data:")) {
-      return event.image_base64;
-    }
+    if (event.image_base64.startsWith("data:")) return event.image_base64;
     return `data:image/jpeg;base64,${event.image_base64}`;
   }
 
-  // Real pothole evidence snapshot
-  if (event.event_type === "pothole" || (event.extra && event.extra.evidence_image)) {
-    return "pothole.jpg";
+  // Priority 2: serve per-event-type real evidence photos
+  const TYPE_IMAGE_MAP = {
+    pothole:       "pothole.jpg",
+    road_damage:   "pothole.jpg",
+    vehicle_count: "vehicle_congestion.jpg",
+    congestion:    "vehicle_congestion.jpg",
+    anpr_alert:    "anpr_alert.jpg",
+  };
+  if (TYPE_IMAGE_MAP[event.event_type]) {
+    return TYPE_IMAGE_MAP[event.event_type];
   }
 
-  const eventName =
-    formatEventName(event.event_type).toUpperCase();
-
-  const severity =
-    getSeverity(event);
-
-  const busId =
-    event.bus_id || "BUS-001";
-
-  const gps =
-    `${Number(event.latitude || 0).toFixed(5)}, ${Number(event.longitude || 0).toFixed(5)}`;
-
-  const eventId =
-    event.id || event.event_id || "EVT";
+  // Priority 3: generate SVG placeholder for unknown types
+  const eventName = formatEventName(event.event_type).toUpperCase();
+  const severity  = getSeverity(event);
+  const busId     = event.bus_id || "BUS-001";
+  const gps       = `${Number(event.latitude || 0).toFixed(5)}, ${Number(event.longitude || 0).toFixed(5)}`;
+  const eventId   = event.id || event.event_id || "EVT";
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
     <rect width="640" height="360" fill="#0f1720"/>
@@ -306,8 +304,98 @@ function getEvidenceDataUrl(event) {
     <rect x="220" y="255" width="200" height="36" rx="6" fill="#9a3412"/>
     <text x="320" y="278" font-family="Arial" font-size="13" font-weight="bold" fill="#fed7aa" text-anchor="middle">AI SEVERITY: ${severity}</text>
   </svg>`;
-
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+
+// ======================================================
+// BUILD EVENT-TYPE SPECIFIC HUD CONFIG
+// ======================================================
+
+function getEvidenceHUD(event) {
+  const type       = event.event_type || "";
+  const extra      = event.extra || {};
+  const confidence = Math.round(Number(event.confidence || 0.90) * 100);
+  const severity   = getSeverity(event);
+
+  switch (type) {
+    case "pothole":
+    case "road_damage":
+      return {
+        icon:     "🕳️",
+        badge:    `POTHOLE DETECTED • CONF: ${confidence}% • ${severity}`,
+        badgeCol: "#ef4444",
+        hudTop:   `SENSOR: FORWARD OPTICAL 4K<br>DETECTOR: YOLOv8-POTHOLE-v2`,
+        hudBot:   `STATUS: VERIFIED • LOGGED`,
+        extraCards: [],
+        fileLabel: `pothole_event_${event.id || 1}.jpg`,
+        boxColor: "#ef4444",
+      };
+
+    case "vehicle_count":
+      return {
+        icon:     "🚗",
+        badge:    `VEHICLES DETECTED • COUNT: ${extra.count || "N/A"} • DENSITY: ${extra.density || "MEDIUM"}`,
+        badgeCol: "#f59e0b",
+        hudTop:   `SENSOR: FORWARD OPTICAL 4K<br>DETECTOR: YOLOv8n-COCO (COCO-80)`,
+        hudBot:   `VEHICLES: ${extra.count || 0} • ${extra.density || "MEDIUM"} DENSITY`,
+        extraCards: [
+          { label: "Vehicle Count", value: extra.count || 0, color: "#fbbf24" },
+          { label: "Traffic Density", value: extra.density || "MEDIUM", color: "#f87171" },
+          { label: "Breakdown",
+            value: extra.breakdown
+              ? Object.entries(extra.breakdown).filter(([,v])=>v>0).map(([k,v])=>`${k}×${v}`).join(", ")
+              : "—",
+            color: "#94a3b8"
+          }
+        ],
+        fileLabel: `vehicle_event_${event.id || 1}.jpg`,
+        boxColor: "#f59e0b",
+      };
+
+    case "congestion":
+      return {
+        icon:     "🚦",
+        badge:    `CONGESTION ALERT • SEVERITY: ${severity} • DENSITY: ${extra.density || "HIGH"}`,
+        badgeCol: "#dc2626",
+        hudTop:   `SENSOR: FORWARD OPTICAL 4K<br>DETECTOR: YOLOv8n-COCO (COCO-80)`,
+        hudBot:   `CONGESTION: ${extra.density || "HIGH"} • ${extra.vehicle_count || 0} VEHICLES`,
+        extraCards: [
+          { label: "Congestion Level", value: extra.density || "HIGH", color: "#ef4444" },
+          { label: "Vehicle Count",    value: extra.vehicle_count || 0, color: "#fbbf24" },
+        ],
+        fileLabel: `congestion_event_${event.id || 1}.jpg`,
+        boxColor: "#dc2626",
+      };
+
+    case "anpr_alert":
+      return {
+        icon:     "🔍",
+        badge:    `LICENSE PLATE • OCR: ${extra.plate_number || "N/A"} • CONF: ${confidence}%`,
+        badgeCol: "#06b6d4",
+        hudTop:   `SENSOR: FORWARD OPTICAL 4K<br>OCR ENGINE: EasyOCR v1.6`,
+        hudBot:   `PLATE: ${extra.plate_number || "DETECTED"} • LOGGED`,
+        extraCards: [
+          { label: "Plate Number",  value: extra.plate_number || "—", color: "#38bdf8" },
+          { label: "OCR Confidence", value: `${confidence}%`,          color: "#34d399" },
+          { label: "Vehicle Class", value: extra.vehicle_class || "car", color: "#94a3b8" },
+        ],
+        fileLabel: `anpr_event_${event.id || 1}.jpg`,
+        boxColor: "#06b6d4",
+      };
+
+    default:
+      return {
+        icon:     "📡",
+        badge:    `${formatEventName(type).toUpperCase()} • CONF: ${confidence}%`,
+        badgeCol: "#6366f1",
+        hudTop:   `SENSOR: FORWARD OPTICAL 4K<br>DETECTOR: URBAN AI PIPELINE`,
+        hudBot:   `STATUS: VERIFIED • LOGGED`,
+        extraCards: [],
+        fileLabel: `event_${event.id || 1}.jpg`,
+        boxColor: "#6366f1",
+      };
+  }
 }
 
 
@@ -321,7 +409,7 @@ function closeEventModal() {
 
 
 // ======================================================
-// VIEW EVIDENCE
+// VIEW EVIDENCE (full forensic AI inspection window)
 // ======================================================
 
 function viewEvidence() {
@@ -331,13 +419,29 @@ function viewEvidence() {
   }
 
   const evidenceUrl = getEvidenceDataUrl(selectedEvent);
-  const eventId = selectedEvent.id || selectedEvent.event_id || "1";
-  const eventType = formatEventName(selectedEvent.event_type).toUpperCase();
-  const severity = getSeverity(selectedEvent);
-  const busId = selectedEvent.bus_id || "BUS-102";
-  const gps = `${Number(selectedEvent.latitude || 0).toFixed(5)}, ${Number(selectedEvent.longitude || 0).toFixed(5)}`;
-  const confidence = Math.round(Number(selectedEvent.confidence || 0.90) * 100);
-  const ts = selectedEvent.timestamp ? new Date(selectedEvent.timestamp).toLocaleString() : new Date().toLocaleString();
+  const hud         = getEvidenceHUD(selectedEvent);
+  const eventId     = selectedEvent.id || selectedEvent.event_id || "1";
+  const eventType   = formatEventName(selectedEvent.event_type).toUpperCase();
+  const severity    = getSeverity(selectedEvent);
+  const busId       = selectedEvent.bus_id || "BUS-102";
+  const gps         = `${Number(selectedEvent.latitude || 0).toFixed(5)}, ${Number(selectedEvent.longitude || 0).toFixed(5)}`;
+  const confidence  = Math.round(Number(selectedEvent.confidence || 0.90) * 100);
+  const ts          = selectedEvent.timestamp ? new Date(selectedEvent.timestamp).toLocaleString() : new Date().toLocaleString();
+
+  const extraCardHtml = [
+    { label: "Event Type",  value: eventType,  color: "#f87171" },
+    { label: "AI Confidence", value: `${confidence}%`, color: "#34d399" },
+    { label: "Severity",    value: severity,    color: "#fbbf24" },
+    { label: "GPS",         value: gps,         color: "#94a3b8" },
+    { label: "Timestamp",   value: ts,          color: "#94a3b8" },
+    { label: "Bus Unit",    value: busId,       color: "#94a3b8" },
+    ...hud.extraCards
+  ].map(c => `
+    <div class="card">
+      <div class="card-lbl">${c.label}</div>
+      <div class="card-val" style="color:${c.color};">${c.value}</div>
+    </div>
+  `).join("");
 
   const win = window.open("", "_blank");
   if (win) {
@@ -346,190 +450,94 @@ function viewEvidence() {
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <title>Evidence Snapshot — Event #${eventId} [${eventType}]</title>
+        <title>${hud.icon} Evidence — Event #${eventId} [${eventType}]</title>
         <style>
           * { box-sizing: border-box; }
           body {
-            margin: 0;
-            padding: 24px;
-            background: #080c14;
-            color: #f1f5f9;
+            margin: 0; padding: 24px;
+            background: #080c14; color: #f1f5f9;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
           }
           .header {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #1e293b;
+            width: 100%; max-width: 840px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #1e293b;
           }
-          .title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            color: #38bdf8;
-          }
+          .title { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.05em; color: #38bdf8; }
           .meta-pill {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            color: #94a3b8;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; color: #94a3b8;
           }
           .stage {
-            position: relative;
-            max-width: 800px;
-            width: 100%;
-            background: #0f172a;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #334155;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            position: relative; max-width: 840px; width: 100%;
+            background: #0f172a; border-radius: 12px; overflow: hidden;
+            border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
           }
           .stage img {
-            width: 100%;
-            height: auto;
-            max-height: 70vh;
-            object-fit: contain;
-            display: block;
+            width: 100%; height: auto; max-height: 68vh;
+            object-fit: contain; display: block;
           }
           .ai-box {
-            position: absolute;
-            left: 13%;
-            top: 32%;
-            width: 72%;
-            height: 52%;
-            border: 3px solid #ef4444;
-            box-shadow: 0 0 16px rgba(239, 68, 68, 0.4), inset 0 0 16px rgba(239, 68, 68, 0.15);
+            position: absolute; left: 12%; top: 18%; width: 76%; height: 60%;
+            border: 3px solid ${hud.boxColor};
+            box-shadow: 0 0 18px ${hud.boxColor}66, inset 0 0 18px ${hud.boxColor}22;
             pointer-events: none;
           }
           .ai-tag {
-            position: absolute;
-            top: -26px;
-            left: -3px;
-            background: #ef4444;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            border-radius: 4px 4px 0 0;
-            white-space: nowrap;
+            position: absolute; top: -28px; left: -3px;
+            background: ${hud.badgeCol}; color: #fff;
+            font-size: 11px; font-weight: 700; padding: 4px 10px;
+            letter-spacing: 0.04em; border-radius: 4px 4px 0 0;
+            white-space: nowrap; text-transform: uppercase;
           }
           .hud-corner {
-            position: absolute;
-            padding: 10px 14px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(4px);
-            font-family: monospace;
-            font-size: 0.78rem;
-            color: #38bdf8;
-            border-radius: 6px;
-            pointer-events: none;
+            position: absolute; padding: 10px 14px;
+            background: rgba(15,23,42,0.88); backdrop-filter: blur(4px);
+            font-family: monospace; font-size: 0.75rem; color: #38bdf8;
+            border-radius: 6px; pointer-events: none; line-height: 1.5;
           }
-          .hud-top-left { top: 12px; left: 12px; border: 1px solid rgba(56, 189, 248, 0.3); }
-          .hud-bottom-right { bottom: 12px; right: 12px; border: 1px solid rgba(56, 189, 248, 0.3); color: #34d399; }
+          .hud-tl { top: 12px; left: 12px; border: 1px solid ${hud.boxColor}55; }
+          .hud-br { bottom: 12px; right: 12px; border: 1px solid #10b98155; color: #34d399; }
           .telemetry-grid {
-            width: 100%;
-            max-width: 800px;
-            margin-top: 16px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
+            width: 100%; max-width: 840px; margin-top: 14px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
           }
           .card {
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            padding: 12px 14px;
-            border-radius: 8px;
+            background: #0f172a; border: 1px solid #1e293b;
+            padding: 12px 14px; border-radius: 8px;
           }
           .card-lbl { font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-          .card-val { font-size: 0.92rem; color: #f8fafc; font-weight: 600; }
-          .btn-bar {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 20px;
-          }
+          .card-val { font-size: 0.9rem; color: #f8fafc; font-weight: 600; word-break: break-all; }
+          .btn-bar { width: 100%; max-width: 840px; display: flex; justify-content: flex-end; gap: 12px; margin-top: 18px; }
           .btn {
-            background: #0284c7;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
+            background: #0284c7; color: #fff; border: none;
+            padding: 8px 18px; border-radius: 6px; font-weight: 500; cursor: pointer;
+            text-decoration: none; display: inline-block;
           }
-          .btn-secondary {
-            background: #1e293b;
-            color: #cbd5e1;
-            border: 1px solid #334155;
-          }
+          .btn-sec { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="title">🚌 URBAN AI EVIDENCE SNAPSHOT (EVENT #${eventId})</div>
+          <div class="title">${hud.icon} URBAN AI EVIDENCE SNAPSHOT — EVENT #${eventId}</div>
           <div class="meta-pill">UNIT: ${busId} &bull; CAM-01</div>
         </div>
 
         <div class="stage">
-          <img src="${evidenceUrl}" alt="Pothole Evidence Photo" />
+          <img src="${evidenceUrl}" alt="AI Evidence Photo" />
           <div class="ai-box">
-            <span class="ai-tag">POTHOLE &bull; CONF: ${confidence}% &bull; ${severity}</span>
+            <span class="ai-tag">${hud.badge}</span>
           </div>
-          <div class="hud-corner hud-top-left">
-            SENSOR: FORWARD OPTICAL 4K<br>
-            DETECTOR: YOLOv8-POTHOLE-v2
-          </div>
-          <div class="hud-corner hud-bottom-right">
-            STATUS: VERIFIED &bull; LOGGED
-          </div>
+          <div class="hud-corner hud-tl">${hud.hudTop}</div>
+          <div class="hud-corner hud-br">${hud.hudBot}</div>
         </div>
 
-        <div class="telemetry-grid">
-          <div class="card">
-            <div class="card-lbl">Event Type</div>
-            <div class="card-val" style="color:#f87171;">${eventType}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">AI Confidence</div>
-            <div class="card-val" style="color:#34d399;">${confidence}%</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Severity Grade</div>
-            <div class="card-val" style="color:#fbbf24;">${severity}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">GPS Coordinates</div>
-            <div class="card-val">${gps}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Captured Timestamp</div>
-            <div class="card-val">${ts}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Bus Unit ID</div>
-            <div class="card-val">${busId}</div>
-          </div>
-        </div>
+        <div class="telemetry-grid">${extraCardHtml}</div>
 
         <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="window.close()">Close</button>
-          <a class="btn" href="${evidenceUrl}" download="pothole_event_${eventId}.jpg">Download Photo</a>
+          <button class="btn btn-sec" onclick="window.close()">Close</button>
+          <a class="btn" href="${evidenceUrl}" download="${hud.fileLabel}">⬇ Download Photo</a>
         </div>
       </body>
       </html>

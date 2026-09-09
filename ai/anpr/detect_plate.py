@@ -33,6 +33,11 @@ while True:
         results = plate_model(frame, verbose=False)
         boxes = results[0].boxes
 
+        # Annotate frame with plate box for evidence
+        annotated = results[0].plot()
+        _, buf = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        frame_b64 = __import__('base64').b64encode(buf).decode('utf-8')
+
         for box in boxes:
             detect_confidence = box.conf[0].item()
             x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
@@ -60,6 +65,7 @@ while True:
                 "longitude": LONGITUDE,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "bus_id": BUS_ID,
+                "image_base64": frame_b64,
                 "extra": {
                     "plate_number": plate_text,
                     "vehicle_class": "car"
