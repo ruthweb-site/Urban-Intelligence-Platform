@@ -6,7 +6,7 @@
 
 const CONFIG = {
   // Default Render URL (update this with your deployed Render URL or change it via the UI)
-  DEFAULT_REMOTE_API: "https://urban-intelligence-backend.onrender.com",
+  DEFAULT_REMOTE_API: "https://urban-intelligence-platform-a1qq.onrender.com/",
   LOCAL_API: "http://127.0.0.1:5000",
 
   /**
