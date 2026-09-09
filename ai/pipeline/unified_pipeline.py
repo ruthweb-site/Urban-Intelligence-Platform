@@ -77,7 +77,7 @@ make_congestion_payload = VEHICLE_DETECTOR.make_congestion_payload
 detect_anpr = ANPR_DETECTOR.detect_anpr
 make_anpr_payload = ANPR_DETECTOR.make_anpr_payload
 
-API_URL = "http://127.0.0.1:5000/api/events"
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:5000/api/events")
 BUS_ID = "BUS-102"
 ROUTE_ID = "ROUTE-18"
 DEFAULT_LAT = 19.0760

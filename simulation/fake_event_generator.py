@@ -14,10 +14,20 @@ import time
 import base64
 from datetime import datetime, timezone
 import os
+import sys
 
 import requests
 
-API_URL = "http://localhost:5000/api/events"
+API_URL = os.environ.get("API_URL")
+if not API_URL:
+    for arg in sys.argv[1:]:
+        if arg.startswith("--api-url="):
+            API_URL = arg.split("=", 1)[1]
+        elif arg.startswith("http"):
+            API_URL = arg
+    if not API_URL:
+        API_URL = "http://localhost:5000/api/events"
+
 BUS_ID = "BUS-001"
 
 HERE = os.path.dirname(__file__)

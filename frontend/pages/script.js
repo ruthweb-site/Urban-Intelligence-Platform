@@ -5,7 +5,9 @@
 const DEFAULT_LAT = 19.4560;
 const DEFAULT_LNG = 72.8110;
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = (typeof CONFIG !== "undefined" && CONFIG.getApiBase)
+  ? CONFIG.getApiBase()
+  : "http://localhost:5000";
 
 
 // ======================================================
@@ -1186,39 +1188,61 @@ async function fetchBuses() {
 
 
 // ======================================================
+// BACKEND STATUS UI HELPER
+// ======================================================
+
+function updateBackendStatusUI(status, label) {
+  const pulseEl = document.getElementById("backendPulse");
+  const labelEl = document.getElementById("backendStatusLabel");
+  if (!pulseEl || !labelEl) return;
+
+  pulseEl.className = "pulse-dot " + status;
+  let hostStr = "";
+  try {
+    const u = new URL(API_BASE);
+    hostStr = u.host;
+  } catch (e) {
+    hostStr = API_BASE;
+  }
+
+  if (status === "online") {
+    labelEl.textContent = `ONLINE (${hostStr})`;
+    labelEl.style.color = "#34d399";
+  } else if (status === "waking") {
+    labelEl.textContent = label || "WAKING UP (Render cold start)...";
+    labelEl.style.color = "#fbbf24";
+  } else {
+    labelEl.textContent = label || `OFFLINE (${hostStr})`;
+    labelEl.style.color = "#f87171";
+  }
+}
+
+
+// ======================================================
 // FETCH ALL DATA
 // ======================================================
 
 async function fetchAll() {
+  const wakingTimer = setTimeout(() => {
+    updateBackendStatusUI("waking", "WAKING UP (Render cold start)...");
+  }, 2500);
 
   try {
-
     await Promise.all([
-
       fetchEvents(),
-
       fetchHeatmap(),
-
       fetchStats(),
-
       fetchImpactDashboard(),
-
       fetchRoadHealth(),
-
       fetchBuses()
-
     ]);
-
+    clearTimeout(wakingTimer);
+    updateBackendStatusUI("online");
+  } catch (error) {
+    clearTimeout(wakingTimer);
+    console.error("Dashboard error:", error);
+    updateBackendStatusUI("offline");
   }
-  catch (error) {
-
-    console.error(
-      "Dashboard error:",
-      error
-    );
-
-  }
-
 }
 
 

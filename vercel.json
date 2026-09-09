@@ -1,0 +1,17 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/frontend/pages/index.html" },
+    { "source": "/index.html", "destination": "/frontend/pages/index.html" },
+    { "source": "/bus-monitor", "destination": "/frontend/pages/bus-monitor.html" },
+    { "source": "/bus_monitor", "destination": "/frontend/pages/bus-monitor.html" },
+    { "source": "/bus-monitor.html", "destination": "/frontend/pages/bus-monitor.html" },
+    { "source": "/bus_monitor.html", "destination": "/frontend/pages/bus-monitor.html" },
+    { "source": "/style.css", "destination": "/frontend/pages/style.css" },
+    { "source": "/script.js", "destination": "/frontend/pages/script.js" },
+    { "source": "/config.js", "destination": "/frontend/pages/config.js" },
+    { "source": "/pothole.jpg", "destination": "/frontend/pages/pothole.jpg" },
+    { "source": "/bus_camera.mp4.mp4", "destination": "/frontend/pages/bus_camera.mp4.mp4" },
+    { "source": "/frontend/pages/(.*)", "destination": "/frontend/pages/$1" }
+  ]
+}

@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Intelligence Platform — Onboard Bus AI Monitor (BUS-102)</title>
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-base: #080c14;
+      --bg-surface: #0e1522;
+      --bg-card: #131c2c;
+      --bg-card-hover: #182438;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --border-alert: rgba(239, 68, 68, 0.4);
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      
+      --cyan-400: #38bdf8;
+      --cyan-500: #0ea5e9;
+      --emerald-400: #34d399;
+      --emerald-500: #10b981;
+      --amber-400: #fbbf24;
+      --amber-500: #f59e0b;
+      --red-500: #ef4444;
+      --red-600: #dc2626;
+      --red-glow: rgba(239, 68, 68, 0.25);
+      
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ==========================================================================
+       TOP HEADER
+       ========================================================================== */
+    header {
+      background: linear-gradient(180deg, #101927 0%, #0d1420 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.35);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .brand-titles h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-titles .sih-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(14, 165, 233, 0.15);
+      color: var(--cyan-400);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .brand-titles p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    /* Fleet metadata pills */
+    .fleet-pills {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .pill .label {
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .pill .value {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .pill.highlight {
+      border-color: rgba(14, 165, 233, 0.35);
+      background: rgba(14, 165, 233, 0.08);
+    }
+
+    .pill.highlight .value {
+      color: var(--cyan-400);
+    }
+
+    /* Live status indicator */
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--emerald-400);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--emerald-400);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--emerald-400);
+      animation: pulse-dot 1.8s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+      70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    }
+
+    .clock-display {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ==========================================================================
+       MAIN CONTENT CONTAINER (GRID)
+       ========================================================================== */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 18px;
+      padding: 18px 24px;
+      max-width: 1780px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==========================================================================
+       LEFT COLUMN: FORWARD-FACING DASHCAM HUD
+       ========================================================================== */
+    .dashcam-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .dashcam-header {
+      padding: 12px 18px;
+      background: rgba(14, 21, 34, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cam-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .cam-tag {
+      background: #1c2738;
+      color: var(--cyan-400);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .feed-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-feed-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-feed-toggle:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--cyan-400);
+    }
+
+    .btn-feed-toggle.active {
+      background: rgba(14, 165, 233, 0.18);
+      color: var(--cyan-400);
+      border-color: var(--cyan-500);
+    }
+
+    /* Video/Image Viewport */
+    .viewport-wrapper {
+      position: relative;
+      width: 100%;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      min-height: 420px;
+    }
+
+    .viewport-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: contrast(1.05) brightness(0.98);
+    }
+
+    /* Tactical HUD Overlays */
+    .hud-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Horizon & Pitch Guides */
+    .hud-reticle-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border: 1px dashed rgba(56, 189, 248, 0.25);
+      border-radius: 50%;
+    }
+
+    .hud-reticle-center::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.7);
+    }
+
+    .hud-horizon-line {
+      position: absolute;
+      top: 50%;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(56, 189, 248, 0.2) 20%, 
+        transparent 45%, 
+        transparent 55%, 
+        rgba(56, 189, 248, 0.2) 80%, 
+        transparent 100%
+      );
+    }
+
+    .hud-top-telemetry {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hud-telemetry-badge {
+      background: rgba(10, 15, 25, 0.7);
+      backdrop-filter: blur(4px);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hud-bottom-telemetry {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Calibrated Pothole Bounding Box */
+    .bounding-box {
+      position: absolute;
+      /* Default mapped to YOLO detections on test_images/pothole.jpg (538x360) */
+      left: 13.3%;
+      top: 31.9%;
+      width: 72.1%;
+      height: 52.4%;
+      border: 2px solid var(--red-500);
+      background: rgba(239, 68, 68, 0.12);
+      box-shadow: 0 0 20px var(--red-glow), inset 0 0 15px rgba(239, 68, 68, 0.15);
+      z-index: 15;
+      transition: all 0.3s ease;
+      display: block;
+    }
+
+    /* Corner reticle brackets for high-tech look */
+    .bounding-box::before, .bounding-box::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: #ffffff;
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .bounding-box::before {
+      top: -2px;
+      left: -2px;
+      border-width: 3px 0 0 3px;
+    }
+
+    .bounding-box::after {
+      bottom: -2px;
+      right: -2px;
+      border-width: 0 3px 3px 0;
+    }
+
+    .bbox-tag {
+      position: absolute;
+      top: -26px;
+      left: -2px;
+      background: var(--red-600);
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 3px 3px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+    }
+
+    .bbox-coords {
+      position: absolute;
+      bottom: -20px;
+      right: 0;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: #fca5a5;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Dashcam Sub-bar */
+    .dashcam-footer {
+      padding: 10px 18px;
+      background: rgba(14, 21, 34, 0.95);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .lens-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    /* ==========================================================================
+       RIGHT COLUMN: AI DETECTION PANEL
+       ========================================================================== */
+    .detection-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Main Alert Banner */
+    .alert-card {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.1) 100%);
+      border: 1px solid var(--border-alert);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
+    }
+
+    .alert-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--red-500);
+    }
+
+    .alert-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .alert-icon-wrap {
+      width: 44px;
+      height: 44px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--red-500);
+    }
+
+    .alert-icon-wrap svg {
+      width: 24px;
+      height: 24px;
+      animation: alert-shake 2.5s infinite;
+    }
+
+    @keyframes alert-shake {
+      0%, 100% { transform: rotate(0deg); }
+      20%, 24% { transform: rotate(-8deg); }
+      22%, 26% { transform: rotate(8deg); }
+      28% { transform: rotate(0deg); }
+    }
+
+    .alert-headline h2 {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #fee2e2;
+      text-transform: uppercase;
+    }
+
+    .alert-headline p {
+      font-size: 11px;
+      color: #fca5a5;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .alert-badge {
+      background: var(--red-600);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Key AI Metrics Cards (Large Numbers for SIH Presentation) */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .metric-title {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .metric-card.confidence .metric-value {
+      color: var(--emerald-400);
+    }
+
+    .metric-card.severity .metric-value {
+      color: var(--red-500);
+    }
+
+    .metric-card.count .metric-value {
+      color: var(--cyan-400);
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--text-subtle);
+    }
+
+    /* Telemetry Detail Card */
+    .detail-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .detail-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detail-card-title svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--cyan-400);
+    }
+
+    .spec-table {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 12px;
+    }
+
+    .spec-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .spec-label {
+      color: var(--text-muted);
+    }
+
+    .spec-value {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .spec-value.highlight {
+      color: var(--cyan-400);
+    }
+
+    .spec-value.pill-val {
+      background: #1a2536;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* Action Buttons Area */
+    .actions-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .actions-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-subtle);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: -4px;
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-ui);
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.35);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-send:hover {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      box-shadow: 0 6px 22px rgba(14, 165, 233, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-send:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-send svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .btn-view-gis {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-view-gis:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--cyan-400);
+      transform: translateY(-1px);
+    }
+
+    .btn-view-gis svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    /* Transmission status banner inside action panel */
+    .transmission-banner {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+
+    .trans-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trans-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber-500);
+    }
+
+    .trans-indicator.ready {
+      background: var(--cyan-400);
+      box-shadow: 0 0 8px var(--cyan-400);
+    }
+
+    .trans-indicator.sent {
+      background: var(--emerald-400);
+      box-shadow: 0 0 8px var(--emerald-400);
+    }
+
+    /* ==========================================================================
+       BOTTOM TELEMETRY BAR
+       ========================================================================== */
+    footer {
+      background: #0a0f18;
+      border-top: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      z-index: 40;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .telemetry-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .telemetry-item svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--cyan-400);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .telemetry-item .label {
+      color: var(--text-subtle);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .telemetry-item .val {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .footer-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge-sent {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--emerald-400);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .status-badge-sent.waiting {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+      color: var(--cyan-400);
+    }
+
+    /* ==========================================================================
+       MODAL / TOAST NOTIFICATION
+       ========================================================================== */
+    .toast-container {
+      position: fixed;
+      bottom: 74px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: #111c2e;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      border-left: 4px solid var(--emerald-500);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 320px;
+      max-width: 440px;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      color: var(--emerald-400);
+      margin-top: 1px;
+    }
+
+    .toast-content h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+
+    .toast-content p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      line-height: 1.4;
+    }
+
+    .toast-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-subtle);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .toast-close:hover {
+      color: #ffffff;
+    }
+
+    /* Code/contract chip */
+    .api-chip {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--cyan-400);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       HEADER
+       ========================================================================== -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+        </svg>
+      </div>
+      <div class="brand-titles">
+        <h1>
+          Urban Intelligence Platform
+          <span class="sih-badge">SIH 2026</span>
+        </h1>
+        <p>Onboard Bus Edge AI Perception Unit • Realtime Road Surface Monitoring</p>
+      </div>
+    </div>
+
+    <!-- Fleet Telemetry Pills -->
+    <div class="fleet-pills">
+      <div class="pill highlight">
+        <span class="label">BUS ID</span>
+        <span class="value" id="hdrBusId">BUS-102</span>
+      </div>
+      <div class="pill highlight">
+        <span class="label">ROUTE</span>
+        <span class="value" id="hdrRouteId">ROUTE-18</span>
+      </div>
+      <div class="pill">
+        <span class="label">CAMERA</span>
+        <span class="value" id="hdrCamId">CAM-01</span>
+      </div>
+      <div class="pill" id="backendPill" style="cursor: pointer;" onclick="if(typeof CONFIG!=='undefined')CONFIG.openConfigModal()" title="Click to view or switch backend API URL">
+        <span class="label">BACKEND</span>
+        <span class="value" id="backendStatusText" style="color: var(--emerald-400);">CHECKING...</span>
+      </div>
+    </div>
+
+    <!-- Live Status & Clock -->
+    <div class="system-status">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
+      <div class="clock-display" id="liveClock">
+        --:--:-- UTC
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN DASHBOARD AREA
+       ========================================================================== -->
+  <main>
+    <!-- LEFT: Large Dashcam / Optical Perception Viewport -->
+    <section class="dashcam-card">
+      <div class="dashcam-header">
+        <div class="cam-meta">
+          <span class="cam-tag">CAM-01</span>
+          <span>FORWARD DASHCAM</span>
+          <span>•</span>
+          <span>1080p 30FPS</span>
+          <span>•</span>
+          <span style="color: var(--emerald-400);">YOLOv8 INFERENCE ACTIVE</span>
+        </div>
+
+        <div class="feed-controls">
+          <button class="btn-feed-toggle active" id="btnTestFrame" onclick="setFeedMode('image')">
+            📷 AI Evidence Frame
+          </button>
+          <button class="btn-feed-toggle" id="btnVideoFeed" onclick="setFeedMode('video')">
+            🎥 Live Dashcam Stream
+          </button>
+          <button class="btn-feed-toggle" id="btnToggleBBox" onclick="toggleBBox()">
+            🎯 BBox: ON
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewport with Tactical HUD Overlays -->
+      <div class="viewport-wrapper" id="viewport">
+        <!-- Feed Image (pothole test frame) -->
+        <img 
+          id="frameImage" 
+          class="viewport-media" 
+          src="pothole.jpg" 
+          alt="Forward Bus Camera - Pothole Frame" 
+          onerror="handleImageFallback(this)"
+        />
+
+        <!-- Feed Video (alternate forward bus camera stream) -->
+        <video 
+          id="frameVideo" 
+          class="viewport-media" 
+          autoplay 
+          loop 
+          muted 
+          playsinline 
+          style="display: none;"
+        >
+          <source src="bus_camera.mp4.mp4" type="video/mp4" />
+        </video>
+
+        <!-- Tactical HUD Overlay -->
+        <div class="hud-layer" id="hudLayer">
+          <!-- Top telemetry bar -->
+          <div class="hud-top-telemetry">
+            <div class="hud-telemetry-badge">
+              CAM-01 // WFOV-110° // SONY IMX415
+            </div>
+            <div class="hud-telemetry-badge">
+              INFERENCE: <span style="color: var(--cyan-400);">18.2 ms</span> &nbsp;|&nbsp; FPS: <span style="color: var(--emerald-400);">29.4</span>
+            </div>
+          </div>
+
+          <!-- Crosshairs and horizon guides -->
+          <div class="hud-reticle-center"></div>
+          <div class="hud-horizon-line"></div>
+
+          <!-- Calibrated YOLO Bounding Box for Pothole Detection -->
+          <div class="bounding-box" id="potholeBBox">
+            <div class="bbox-tag">
+              <span>🚨</span>
+              <span>POTHOLE DETECTED // 90% CONF // HIGH</span>
+            </div>
+            <div class="bbox-coords">
+              BBOX: [71.66, 114.67, 459.37, 303.32]
+            </div>
+          </div>
+
+          <!-- Bottom Telemetry HUD -->
+          <div class="hud-bottom-telemetry">
+            <div class="hud-telemetry-badge">
+              HDG 184° [S] &nbsp;|&nbsp; SPEED: 38.4 KM/H &nbsp;|&nbsp; ALT: 14m
+            </div>
+            <div class="hud-telemetry-badge">
+              GPS: 19.0760° N, 72.8777° E (MUMBAI)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashcam Footer Specs -->
+      <div class="dashcam-footer">
+        <div class="lens-info">
+          <span>MODEL: <strong>best.pt (YOLOv8 Pothole-Edge)</strong></span>
+          <span>•</span>
+          <span>RESOLUTION: <strong>538 × 360 px</strong></span>
+          <span>•</span>
+          <span>INPUT: <strong>Forward Road Surface</strong></span>
+        </div>
+        <div>
+          <span style="color: var(--cyan-400); font-family: var(--font-mono); font-size: 11px;">
+            AI PIPELINE INTEGRATED (SIH 2026)
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: AI DETECTION PANEL -->
+    <aside class="detection-panel">
+      
+      <!-- Alert / Status Banner -->
+      <div class="alert-card" id="alertCard">
+        <div class="alert-left">
+          <div class="alert-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <div class="alert-headline">
+            <h2 id="detectionVerdict">POTHOLE DETECTED</h2>
+            <p id="detectionSubtitle">Critical Road Surface Cavity Confirmed by Edge AI</p>
+          </div>
+        </div>
+        <div class="alert-badge" id="detectionBadge">
+          HIGH
+        </div>
+      </div>
+
+      <!-- Key Metrics (Large Readable Numbers for Presentation) -->
+      <div class="metrics-grid">
+        <!-- Confidence -->
+        <div class="metric-card confidence">
+          <div class="metric-title">
+            <span>Confidence</span>
+            <span style="color: var(--emerald-400);">● Validated</span>
+          </div>
+          <div class="metric-value" id="valConfidence">90%</div>
+          <div class="metric-sub">Threshold: ≥ 85% (High)</div>
+        </div>
+
+        <!-- Severity -->
+        <div class="metric-card severity">
+          <div class="metric-title">
+            <span>Severity</span>
+            <span style="color: var(--red-500);">● Critical</span>
+          </div>
+          <div class="metric-value" id="valSeverity">HIGH</div>
+          <div class="metric-sub">Category 1 Structural</div>
+        </div>
+
+        <!-- Detection Count -->
+        <div class="metric-card count">
+          <div class="metric-title">
+            <span>Count</span>
+            <span style="color: var(--cyan-400);">● In-Frame</span>
+          </div>
+          <div class="metric-value" id="valCount">1</div>
+          <div class="metric-sub">Active Road Cavities</div>
+        </div>
+      </div>
+
+      <!-- Spatial & Bounding Box Details -->
+      <div class="detail-card">
+        <div class="detail-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="3" x2="9" y2="21"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+          </svg>
+          Spatial & Bounding Box Telemetry
+        </div>
+
+        <div class="spec-table">
+          <div class="spec-row">
+            <span class="spec-label">Detection Status</span>
+            <span class="spec-value highlight" id="specStatus">THREAT DETECTED</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Bounding Box (X1, Y1)</span>
+            <span class="spec-value pill-val" id="specBbox1">X1: 71.66 px, Y1: 114.67 px</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Bounding Box (X2, Y2)</span>
+            <span class="spec-value pill-val" id="specBbox2">X2: 459.37 px, Y2: 303.32 px</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Defect Area (Estimated)</span>
+            <span class="spec-value">387.7 × 188.6 px (~0.73 m²)</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Edge Inference Speed</span>
+            <span class="spec-value" style="color: var(--emerald-400);">18.2 ms (YOLOv8 Onboard)</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">API Contract Match</span>
+            <span class="spec-value pill-val">POST /api/events (SQLite + GIS)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edge Action Buttons -->
+      <div class="actions-card">
+        <div class="actions-label">Edge-to-Cloud Dispatch</div>
+
+        <!-- Primary Send Button -->
+        <button class="btn-send" id="btnSendEvent" onclick="sendToCommandCenter()">
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+          <span id="btnSendText">SEND TO COMMAND CENTER</span>
+        </button>
+
+        <!-- View Command Center (Opens GIS Dashboard) -->
+        <a class="btn-view-gis" id="btnViewGis" href="./index.html" target="_blank">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>VIEW COMMAND CENTER (GIS MAP)</span>
+        </a>
+
+        <!-- Transmission Status Indicator -->
+        <div class="transmission-banner">
+          <div class="trans-left">
+            <div class="trans-indicator" id="transIndicator"></div>
+            <span id="transStatusText">Status: READY TO DISPATCH</span>
+          </div>
+          <span class="api-chip" id="lastHttpCode">HTTP --</span>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ==========================================================================
+       BOTTOM STATUS & TELEMETRY BAR
+       ========================================================================== -->
+  <footer>
+    <div class="footer-left">
+      <!-- GPS -->
+      <div class="telemetry-item">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        <span class="label">GPS:</span>
+        <span class="val" id="ftrGps">19.076, 72.8777</span>
+      </div>
+
+      <!-- Bus ID -->
+      <div class="telemetry-item">
+        <span class="label">BUS ID:</span>
+        <span class="val" id="ftrBusId">BUS-102</span>
+      </div>
+
+      <!-- Route -->
+      <div class="telemetry-item">
+        <span class="label">ROUTE:</span>
+        <span class="val" id="ftrRoute">ROUTE-18</span>
+      </div>
+
+      <!-- Camera -->
+      <div class="telemetry-item">
+        <span class="label">CAMERA:</span>
+        <span class="val" id="ftrCam">CAM-01</span>
+      </div>
+
+      <!-- Timestamp -->
+      <div class="telemetry-item">
+        <span class="label">TIMESTAMP:</span>
+        <span class="val" id="ftrTimestamp">--:--:--</span>
+      </div>
+
+      <!-- Event ID -->
+      <div class="telemetry-item">
+        <span class="label">EVENT ID:</span>
+        <span class="val" id="ftrEventId" style="color: var(--cyan-400);">#380</span>
+      </div>
+    </div>
+
+    <!-- Status text badge -->
+    <div class="footer-status">
+      <div class="status-badge-sent" id="ftrStatusBadge">
+        <span id="ftrStatusDot">●</span>
+        <span id="ftrStatusText">EVENT SENT TO COMMAND CENTER</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       TOAST NOTIFICATION MODAL
+       ========================================================================== -->
+  <div class="toast-container">
+    <div class="toast" id="successToast">
+      <div class="toast-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <div class="toast-content">
+        <h4 id="toastTitle">Event Dispatched Successfully!</h4>
+        <p id="toastMessage">
+          HTTP 201 Created • Event ID: #380 logged to SQLite and dispatched to Command Center GIS map.
+        </p>
+      </div>
+      <button class="toast-close" onclick="closeToast()">✕</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT LOGIC
+       ========================================================================== -->
+  <!-- Configuration Helper -->
+  <script src="config.js"></script>
+
+  <script>
+    // Configuration matching ai/pipeline/pothole_pipeline.py & backend/app.py
+    const API_BASE = (typeof CONFIG !== "undefined" && CONFIG.getApiBase)
+      ? CONFIG.getApiBase()
+      : "http://127.0.0.1:5000";
+    const EVENT_ENDPOINT = `${API_BASE}/api/events`;
+
+    const BUS_METADATA = {
+      busId: "BUS-102",
+      routeId: "ROUTE-18",
+      cameraId: "CAM-01",
+      latitude: 19.0760,
+      longitude: 72.8777,
+      confidence: 0.90,
+      severity: "HIGH",
+      detectionCount: 1,
+      bbox: {
+        x1: 71.66,
+        y1: 114.67,
+        x2: 459.37,
+        y2: 303.32
+      }
+    };
+
+    let latestEventId = 380;
+    let isSubmitting = false;
+    let currentFeedMode = "image";
+    let isBBoxVisible = true;
+
+    // DOM Elements
+    const liveClockEl = document.getElementById("liveClock");
+    const ftrTimestampEl = document.getElementById("ftrTimestamp");
+    const ftrEventIdEl = document.getElementById("ftrEventId");
+    const ftrStatusBadgeEl = document.getElementById("ftrStatusBadge");
+    const ftrStatusTextEl = document.getElementById("ftrStatusText");
+    const transIndicatorEl = document.getElementById("transIndicator");
+    const transStatusTextEl = document.getElementById("transStatusText");
+    const lastHttpCodeEl = document.getElementById("lastHttpCode");
+    const btnSendEventEl = document.getElementById("btnSendEvent");
+    const btnSendTextEl = document.getElementById("btnSendText");
+    const potholeBBoxEl = document.getElementById("potholeBBox");
+    const successToastEl = document.getElementById("successToast");
+    const toastMessageEl = document.getElementById("toastMessage");
+    const backendStatusTextEl = document.getElementById("backendStatusText");
+
+    // Feed elements
+    const frameImageEl = document.getElementById("frameImage");
+    const frameVideoEl = document.getElementById("frameVideo");
+    const btnTestFrameEl = document.getElementById("btnTestFrame");
+    const btnVideoFeedEl = document.getElementById("btnVideoFeed");
+    const btnToggleBBoxEl = document.getElementById("btnToggleBBox");
+
+    // --------------------------------------------------------------------------
+    // Realtime Clock Updater
+    // --------------------------------------------------------------------------
+    function updateClock() {
+      const now = new Date();
+      const utcString = now.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+      const localTimeString = now.toLocaleTimeString("en-US", { hour12: false });
+      
+      if (liveClockEl) {
+        liveClockEl.textContent = `${localTimeString} (LOCAL) | ${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')}:${now.getUTCSeconds().toString().padStart(2, '0')} UTC`;
+      }
+      if (ftrTimestampEl) {
+        ftrTimestampEl.textContent = now.toLocaleTimeString("en-US", { hour12: false });
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --------------------------------------------------------------------------
+    // Backend Health & Event Status Check
+    // --------------------------------------------------------------------------
+    async function checkBackendConnection() {
+      let hostStr = "API";
+      try {
+        hostStr = new URL(API_BASE).host;
+      } catch(e) {
+        hostStr = API_BASE;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/health`, { method: "GET" });
+        if (res.ok) {
+          backendStatusTextEl.textContent = `ONLINE (${hostStr})`;
+          backendStatusTextEl.style.color = "var(--emerald-400)";
+        } else {
+          backendStatusTextEl.textContent = `WARN (${hostStr})`;
+          backendStatusTextEl.style.color = "var(--amber-400)";
+        }
+      } catch (err) {
+        backendStatusTextEl.textContent = `OFFLINE (${hostStr})`;
+        backendStatusTextEl.style.color = "var(--red-500)";
+      }
+    }
+
+    async function syncLatestEvent() {
+      try {
+        const res = await fetch(`${API_BASE}/api/events?bus_id=${BUS_METADATA.busId}&event_type=pothole`);
+        if (res.ok) {
+          const events = await res.json();
+          if (events && events.length > 0) {
+            const latest = events[0];
+            latestEventId = latest.id;
+            ftrEventIdEl.textContent = `#${latestEventId}`;
+            setTransmissionStatus("sent", 201, latestEventId);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not sync latest event from backend:", e);
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // POST Event to Command Center (Exact API Contract)
+    // --------------------------------------------------------------------------
+    async function sendToCommandCenter() {
+      if (isSubmitting) return;
+
+      isSubmitting = true;
+      btnSendEventEl.disabled = true;
+      btnSendTextEl.textContent = "TRANSMITTING TO CLOUD...";
+      btnSendEventEl.style.background = "linear-gradient(135deg, #0369a1 0%, #075985 100%)";
+
+      transStatusTextEl.textContent = "Status: DISPATCHING EVENT...";
+      transIndicatorEl.className = "trans-indicator ready";
+
+      // Exact API contract required by backend/app.py & database/db.py
+      const payload = {
+        event_type: "pothole",
+        confidence: BUS_METADATA.confidence,
+        latitude: BUS_METADATA.latitude,
+        longitude: BUS_METADATA.longitude,
+        timestamp: new Date().toISOString(),
+        bus_id: BUS_METADATA.busId,
+        extra: {
+          severity: BUS_METADATA.severity,
+          route_id: BUS_METADATA.routeId,
+          camera_id: BUS_METADATA.cameraId,
+          evidence_image: "pothole.jpg",
+          status: "OPEN",
+          source: "ai_pipeline",
+          detection_count: BUS_METADATA.detectionCount,
+          bbox: BUS_METADATA.bbox
+        }
+      };
+
+      try {
+        const response = await fetch(EVENT_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const status = response.status;
+        lastHttpCodeEl.textContent = `HTTP ${status}`;
+
+        if (status === 201 || response.ok) {
+          const respData = await response.json();
+          const newEventId = respData.id || latestEventId + 1;
+          latestEventId = newEventId;
+
+          // Update UI Elements
+          ftrEventIdEl.textContent = `#${newEventId}`;
+          setTransmissionStatus("sent", 201, newEventId);
+
+          // Success notification
+          showToast(
+            "Event Sent to Command Center!",
+            `HTTP 201 Created • Event ID #${newEventId} registered. Dispatched to GIS Command Center and logged in database.`
+          );
+
+          // Visual feedback on button
+          btnSendTextEl.innerHTML = "✓ EVENT DISPATCHED (HTTP 201)";
+          btnSendEventEl.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
+
+          setTimeout(() => {
+            btnSendTextEl.textContent = "SEND TO COMMAND CENTER";
+            btnSendEventEl.style.background = "";
+            btnSendEventEl.disabled = false;
+            isSubmitting = false;
+          }, 3500);
+
+        } else {
+          const errText = await response.text();
+          throw new Error(`HTTP ${status}: ${errText}`);
+        }
+
+      } catch (err) {
+        console.error("Failed to transmit pothole event:", err);
+        lastHttpCodeEl.textContent = "HTTP ERR";
+        transStatusTextEl.textContent = "Status: TRANSMISSION FAILED";
+        transIndicatorEl.className = "trans-indicator";
+        transIndicatorEl.style.background = "var(--red-500)";
+
+        showToast(
+          "Transmission Failed",
+          `Could not connect to ${EVENT_ENDPOINT}. Verify that the backend is running.`
+        );
+
+        btnSendTextEl.textContent = "RETRY TRANSMISSION";
+        btnSendEventEl.style.background = "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
+        btnSendEventEl.disabled = false;
+        isSubmitting = false;
+      }
+    }
+
+    function setTransmissionStatus(state, code, id) {
+      if (state === "sent") {
+        ftrStatusBadgeEl.className = "status-badge-sent";
+        ftrStatusBadgeEl.style.background = "rgba(16, 185, 129, 0.15)";
+        ftrStatusBadgeEl.style.borderColor = "rgba(16, 185, 129, 0.4)";
+        ftrStatusBadgeEl.style.color = "var(--emerald-400)";
+        ftrStatusTextEl.textContent = "EVENT SENT TO COMMAND CENTER";
+
+        transStatusTextEl.textContent = `Status: EVENT SENT (ID #${id})`;
+        transIndicatorEl.className = "trans-indicator sent";
+        lastHttpCodeEl.textContent = `HTTP ${code}`;
+        lastHttpCodeEl.style.color = "var(--emerald-400)";
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // Toast Notification System
+    // --------------------------------------------------------------------------
+    let toastTimeout = null;
+    function showToast(title, message) {
+      document.getElementById("toastTitle").textContent = title;
+      toastMessageEl.textContent = message;
+
+      successToastEl.classList.add("show");
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        closeToast();
+      }, 5500);
+    }
+
+    function closeToast() {
+      successToastEl.classList.remove("show");
+    }
+
+    // --------------------------------------------------------------------------
+    // Viewport Mode Switcher (Test Frame Image vs Live Video)
+    // --------------------------------------------------------------------------
+    function setFeedMode(mode) {
+      currentFeedMode = mode;
+
+      if (mode === "image") {
+        frameImageEl.style.display = "block";
+        frameVideoEl.style.display = "none";
+        try { frameVideoEl.pause(); } catch(e) {}
+
+        btnTestFrameEl.classList.add("active");
+        btnVideoFeedEl.classList.remove("active");
+
+        // Keep BBox positioned on the pothole image
+        potholeBBoxEl.style.display = isBBoxVisible ? "block" : "none";
+        potholeBBoxEl.style.left = "13.3%";
+        potholeBBoxEl.style.top = "31.9%";
+        potholeBBoxEl.style.width = "72.1%";
+        potholeBBoxEl.style.height = "52.4%";
+      } else {
+        frameImageEl.style.display = "none";
+        frameVideoEl.style.display = "block";
+        try { frameVideoEl.play(); } catch(e) {}
+
+        btnVideoFeedEl.classList.add("active");
+        btnTestFrameEl.classList.remove("active");
+
+        // Adjust BBox for road area in the forward bus video
+        potholeBBoxEl.style.display = isBBoxVisible ? "block" : "none";
+        potholeBBoxEl.style.left = "28%";
+        potholeBBoxEl.style.top = "52%";
+        potholeBBoxEl.style.width = "38%";
+        potholeBBoxEl.style.height = "30%";
+      }
+    }
+
+    function toggleBBox() {
+      isBBoxVisible = !isBBoxVisible;
+      potholeBBoxEl.style.display = isBBoxVisible ? "block" : "none";
+      btnToggleBBoxEl.textContent = isBBoxVisible ? "🎯 BBox: ON" : "🎯 BBox: OFF";
+      btnToggleBBoxEl.classList.toggle("active", isBBoxVisible);
+    }
+
+    // Fallback if pothole.jpg cannot be loaded directly
+    function handleImageFallback(img) {
+      console.warn("pothole.jpg not found in local directory, falling back to procedural canvas pattern");
+      // Use fallback SVG placeholder
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">
+          <rect width="640" height="400" fill="#141a24"/>
+          <path d="M0 240 L320 120 L640 240 L640 400 L0 400 Z" fill="#1a2230"/>
+          <ellipse cx="320" cy="270" rx="140" ry="60" fill="#0b0e14" stroke="#e11d48" stroke-width="3"/>
+          <text x="320" y="275" fill="#f43f5e" font-family="monospace" font-size="16" font-weight="bold" text-anchor="middle">ROAD POTHOLE DETECTED [CAM-01]</text>
+        </svg>
+      `);
+    }
+
+    // Initial setup on page load
+    window.addEventListener("DOMContentLoaded", () => {
+      checkBackendConnection();
+      syncLatestEvent();
+      setInterval(checkBackendConnection, 10000);
+    });
+  </script>
+</body>
+</html>

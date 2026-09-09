@@ -711,3 +711,70 @@ button.active {
     font-size: 9px;
   }
 }
+
+/* =========================================
+   BACKEND CONNECTION STATUS BAR
+========================================= */
+.backend-connection-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a2634;
+  border: 1px solid #2e4157;
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.backend-connection-bar:hover {
+  background: #233347;
+  border-color: #38bdf8;
+  color: #f1f5f9;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  display: inline-block;
+}
+
+.pulse-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.pulse-dot.waking {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: pulse-warn 1.2s infinite;
+}
+
+.pulse-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+@keyframes pulse-warn {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+.api-gear {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.backend-connection-bar:hover .api-gear {
+  opacity: 1;
+  transform: rotate(30deg);
+  transition: transform 0.2s ease;
+}

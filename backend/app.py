@@ -3,7 +3,14 @@ Urban Intelligence Platform - Backend API
 Run: python app.py
 Serves on http://localhost:5000
 """
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, make_response
+try:
+    from flask_cors import CORS
+    has_cors = True
+except ImportError:
+    has_cors = False
+
 from database.db import (
     init_db,
     init_mongo,
@@ -22,23 +29,53 @@ from database.db import (
 )
 
 app = Flask(__name__)
+if has_cors:
+    CORS(app, resources={r"/*": {"origins": "*"}})
+
 init_db()
 init_mongo()
 
 
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        return response, 200
+
+
 @app.after_request
 def add_cors_headers(response):
-    # Manual CORS (avoids needing the flask-cors package) so the frontend,
-    # served on a different port, can call this API.
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PATCH, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     return response
 
 
 @app.errorhandler(MongoUnavailableError)
 def handle_mongo_unavailable(e):
     return jsonify({"error": "MongoDB is unavailable"}), 503
+
+
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({
+        "status": "online",
+        "service": "Urban Intelligence Platform API",
+        "message": "Backend service is operational",
+        "endpoints": {
+            "health": "/api/health",
+            "events": "/api/events",
+            "heatmap": "/api/events/heatmap",
+            "stats": "/api/stats",
+            "tickets": "/api/tickets",
+            "buses": "/api/buses",
+            "impact": "/api/impact",
+            "road_health": "/api/road-health"
+        }
+    })
 
 
 # ============================================================================
@@ -147,4 +184,7 @@ def get_road_health_route():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
+    print(f"[*] Starting Urban Intelligence Platform Backend on port {port} (debug={debug})...")
+    app.run(host="0.0.0.0", port=port, debug=debug)

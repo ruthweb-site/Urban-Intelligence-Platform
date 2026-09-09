@@ -31,6 +31,12 @@
       <p class="subtitle">
         Live bus-fleet sensing dashboard (demo)
       </p>
+
+      <div id="backendConnectionBar" class="backend-connection-bar" onclick="CONFIG.openConfigModal()" title="Click to view or switch backend API URL">
+        <span class="pulse-dot" id="backendPulse"></span>
+        <span id="backendStatusLabel">CONNECTING...</span>
+        <span class="api-gear">⚙️</span>
+      </div>
     </div>
 
 
@@ -505,6 +511,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- Dashboard Configuration & Dynamic API Base -->
+
+  <script src="config.js"></script>
 
   <!-- Dashboard JavaScript -->
 
