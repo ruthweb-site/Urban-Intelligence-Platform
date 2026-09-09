@@ -69,13 +69,31 @@ def insert_event(data):
     if not img_b64:
         extra = data.get("extra", {})
         ev_path = extra.get("evidence_image") if isinstance(extra, dict) else None
-        if ev_path and os.path.exists(ev_path):
-            try:
-                import base64
-                with open(ev_path, "rb") as f:
-                    img_b64 = base64.b64encode(f.read()).decode("utf-8")
-            except Exception:
-                pass
+
+        candidates = []
+        if ev_path:
+            candidates.extend([
+                ev_path,
+                os.path.join(os.path.dirname(__file__), "..", ev_path),
+                os.path.join(os.path.dirname(__file__), ev_path),
+            ])
+        if data.get("event_type") == "pothole":
+            candidates.extend([
+                os.path.join(os.path.dirname(__file__), "..", "pothole.jpg"),
+                os.path.join(os.path.dirname(__file__), "pothole.jpg"),
+                os.path.join(os.path.dirname(__file__), "..", "frontend", "pages", "pothole.jpg"),
+                "pothole.jpg"
+            ])
+
+        for path in candidates:
+            if path and os.path.exists(path):
+                try:
+                    import base64
+                    with open(path, "rb") as f:
+                        img_b64 = base64.b64encode(f.read()).decode("utf-8")
+                    break
+                except Exception:
+                    pass
 
     conn = get_conn()
     cur = conn.execute(

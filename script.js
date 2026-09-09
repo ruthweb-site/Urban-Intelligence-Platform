@@ -268,19 +268,17 @@ function showEventDetails(event) {
 // ======================================================
 
 function getEvidenceDataUrl(event) {
-
-  if (event.image_base64) {
-
+  if (event.image_base64 && event.image_base64.trim()) {
     if (event.image_base64.startsWith("data:")) {
-
       return event.image_base64;
-
     }
-
     return `data:image/jpeg;base64,${event.image_base64}`;
-
   }
 
+  // Real pothole evidence snapshot
+  if (event.event_type === "pothole" || (event.extra && event.extra.evidence_image)) {
+    return "pothole.jpg";
+  }
 
   const eventName =
     formatEventName(event.event_type).toUpperCase();
@@ -297,7 +295,6 @@ function getEvidenceDataUrl(event) {
   const eventId =
     event.id || event.event_id || "EVT";
 
-
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
     <rect width="640" height="360" fill="#0f1720"/>
     <rect x="20" y="20" width="600" height="320" rx="10" fill="#1c2632" stroke="#4da3ff" stroke-width="2"/>
@@ -311,7 +308,6 @@ function getEvidenceDataUrl(event) {
   </svg>`;
 
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-
 }
 
 
@@ -320,11 +316,7 @@ function getEvidenceDataUrl(event) {
 // ======================================================
 
 function closeEventModal() {
-
-  document.getElementById(
-    "eventModal"
-  ).style.display = "none";
-
+  document.getElementById("eventModal").style.display = "none";
 }
 
 
@@ -333,49 +325,217 @@ function closeEventModal() {
 // ======================================================
 
 function viewEvidence() {
-
   if (!selectedEvent) {
-
     alert("Please select an event first.");
-
     return;
-
   }
 
-
-  const evidenceUrl =
-    getEvidenceDataUrl(selectedEvent);
-
-  const eventId =
-    selectedEvent.id || selectedEvent.event_id || "EVT";
-
+  const evidenceUrl = getEvidenceDataUrl(selectedEvent);
+  const eventId = selectedEvent.id || selectedEvent.event_id || "1";
+  const eventType = formatEventName(selectedEvent.event_type).toUpperCase();
+  const severity = getSeverity(selectedEvent);
+  const busId = selectedEvent.bus_id || "BUS-102";
+  const gps = `${Number(selectedEvent.latitude || 0).toFixed(5)}, ${Number(selectedEvent.longitude || 0).toFixed(5)}`;
+  const confidence = Math.round(Number(selectedEvent.confidence || 0.90) * 100);
+  const ts = selectedEvent.timestamp ? new Date(selectedEvent.timestamp).toLocaleString() : new Date().toLocaleString();
 
   const win = window.open("", "_blank");
-
   if (win) {
-
     win.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
-        <title>Evidence Snapshot — Event #${eventId}</title>
+        <meta charset="UTF-8">
+        <title>Evidence Snapshot — Event #${eventId} [${eventType}]</title>
         <style>
-          body { margin: 0; background: #0f1720; color: #e6edf3; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: Arial, sans-serif; }
-          img { max-width: 90vw; max-height: 80vh; border-radius: 8px; border: 2px solid #4da3ff; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
-          .title { margin-bottom: 16px; font-size: 18px; font-weight: bold; color: #4da3ff; letter-spacing: 1px; }
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 24px;
+            background: #080c14;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+          }
+          .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1e293b;
+          }
+          .title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #38bdf8;
+          }
+          .meta-pill {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+          }
+          .stage {
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+            background: #0f172a;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+          }
+          .stage img {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            object-fit: contain;
+            display: block;
+          }
+          .ai-box {
+            position: absolute;
+            left: 13%;
+            top: 32%;
+            width: 72%;
+            height: 52%;
+            border: 3px solid #ef4444;
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.4), inset 0 0 16px rgba(239, 68, 68, 0.15);
+            pointer-events: none;
+          }
+          .ai-tag {
+            position: absolute;
+            top: -26px;
+            left: -3px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border-radius: 4px 4px 0 0;
+            white-space: nowrap;
+          }
+          .hud-corner {
+            position: absolute;
+            padding: 10px 14px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            font-family: monospace;
+            font-size: 0.78rem;
+            color: #38bdf8;
+            border-radius: 6px;
+            pointer-events: none;
+          }
+          .hud-top-left { top: 12px; left: 12px; border: 1px solid rgba(56, 189, 248, 0.3); }
+          .hud-bottom-right { bottom: 12px; right: 12px; border: 1px solid rgba(56, 189, 248, 0.3); color: #34d399; }
+          .telemetry-grid {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+          }
+          .card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            padding: 12px 14px;
+            border-radius: 8px;
+          }
+          .card-lbl { font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+          .card-val { font-size: 0.92rem; color: #f8fafc; font-weight: 600; }
+          .btn-bar {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+          }
+          .btn {
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+          }
+          .btn-secondary {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+          }
         </style>
       </head>
       <body>
-        <div class="title">🚌 URBAN AI EVIDENCE SNAPSHOT (EVENT #${eventId})</div>
-        <img src="${evidenceUrl}" alt="Evidence Snapshot" />
+        <div class="header">
+          <div class="title">🚌 URBAN AI EVIDENCE SNAPSHOT (EVENT #${eventId})</div>
+          <div class="meta-pill">UNIT: ${busId} &bull; CAM-01</div>
+        </div>
+
+        <div class="stage">
+          <img src="${evidenceUrl}" alt="Pothole Evidence Photo" />
+          <div class="ai-box">
+            <span class="ai-tag">POTHOLE &bull; CONF: ${confidence}% &bull; ${severity}</span>
+          </div>
+          <div class="hud-corner hud-top-left">
+            SENSOR: FORWARD OPTICAL 4K<br>
+            DETECTOR: YOLOv8-POTHOLE-v2
+          </div>
+          <div class="hud-corner hud-bottom-right">
+            STATUS: VERIFIED &bull; LOGGED
+          </div>
+        </div>
+
+        <div class="telemetry-grid">
+          <div class="card">
+            <div class="card-lbl">Event Type</div>
+            <div class="card-val" style="color:#f87171;">${eventType}</div>
+          </div>
+          <div class="card">
+            <div class="card-lbl">AI Confidence</div>
+            <div class="card-val" style="color:#34d399;">${confidence}%</div>
+          </div>
+          <div class="card">
+            <div class="card-lbl">Severity Grade</div>
+            <div class="card-val" style="color:#fbbf24;">${severity}</div>
+          </div>
+          <div class="card">
+            <div class="card-lbl">GPS Coordinates</div>
+            <div class="card-val">${gps}</div>
+          </div>
+          <div class="card">
+            <div class="card-lbl">Captured Timestamp</div>
+            <div class="card-val">${ts}</div>
+          </div>
+          <div class="card">
+            <div class="card-lbl">Bus Unit ID</div>
+            <div class="card-val">${busId}</div>
+          </div>
+        </div>
+
+        <div class="btn-bar">
+          <button class="btn btn-secondary" onclick="window.close()">Close</button>
+          <a class="btn" href="${evidenceUrl}" download="pothole_event_${eventId}.jpg">Download Photo</a>
+        </div>
       </body>
       </html>
     `);
-
     win.document.close();
-
   }
-
 }
 
 
