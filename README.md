@@ -29,7 +29,7 @@ Runs on **http://localhost:5000**
 ### 2. Frontend (Terminal 2)
 ```bash
 cd frontend/pages
-python -m http.server 8080
+python -m http.server 8080 --bind 127.0.0.1
 ```
 Open **http://localhost:8080** in your browser. You should see a map of the city (edit the default coordinates in `frontend/pages/index.html` if your city is different).
 
