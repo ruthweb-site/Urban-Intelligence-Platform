@@ -1,0 +1,23 @@
+{
+  "name": "c",
+  "version": "1.0.0",
+  "description": "SIH Internal Hackathon Project | Org: Bharat Electronics",
+  "homepage": "https://github.com/ruthweb-site/Urban-Intelligence-Platform#readme",
+  "bugs": {
+    "url": "https://github.com/ruthweb-site/Urban-Intelligence-Platform/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruthweb-site/Urban-Intelligence-Platform.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
