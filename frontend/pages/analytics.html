@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Urban Intelligence Platform — Analytics</title>
+
+  <!-- Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <!-- Analytics Styles -->
+  <link rel="stylesheet" href="analytics.css" />
+</head>
+
+<body>
+
+  <!-- =====================================================
+       ANALYTICS PAGE
+       ===================================================== -->
+
+  <div class="analytics-page">
+
+    <!-- ===================================================
+         TOP HEADER
+         =================================================== -->
+
+    <header class="analytics-header">
+
+      <div class="header-brand">
+
+        <div class="brand-icon">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+
+        <div class="brand-content">
+          <h1>Urban Intelligence Platform</h1>
+          <p>Municipal Analytics Center</p>
+        </div>
+
+      </div>
+
+      <div class="header-status">
+
+        <span
+          id="analyticsBackendDot"
+          class="status-dot"
+        ></span>
+
+        <span id="analyticsBackendStatus">
+          Connecting...
+        </span>
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         NAVIGATION
+         =================================================== -->
+
+    <nav class="analytics-nav">
+
+      <a
+        href="index.html"
+        class="nav-btn"
+      >
+        <i class="fa-solid fa-map-location-dot"></i>
+        <span>Main Dashboard</span>
+      </a>
+
+      <a
+        href="analytics.html"
+        class="nav-btn active"
+      >
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Analytics</span>
+      </a>
+
+      <a
+        href="bus-monitor.html"
+        class="nav-btn"
+      >
+        <i class="fa-solid fa-bus"></i>
+        <span>Bus Monitor</span>
+      </a>
+
+    </nav>
+
+
+    <!-- ===================================================
+         PAGE TITLE
+         =================================================== -->
+
+    <main class="analytics-content">
+
+      <section class="page-heading">
+
+        <div>
+
+          <span class="page-eyebrow">
+            <i class="fa-solid fa-chart-simple"></i>
+            ANALYTICS
+          </span>
+
+          <h2>Infrastructure &amp; Mobility Analysis</h2>
+
+          <p>
+            Historical analysis of detected road issues,
+            severity, road health, traffic activity and
+            authority response.
+          </p>
+
+        </div>
+
+        <button
+          id="analyticsRefreshBtn"
+          class="refresh-btn"
+          type="button"
+        >
+          <i class="fa-solid fa-rotate"></i>
+          Refresh Data
+        </button>
+
+      </section>
+
+
+      <!-- =================================================
+           FILTER BAR
+           ================================================= -->
+
+      <section class="analytics-filter-bar">
+
+        <div class="filter-heading">
+          <i class="fa-solid fa-filter"></i>
+          <span>Analysis Filters</span>
+        </div>
+
+        <div class="filter-group">
+
+          <label for="analyticsEventType">
+            Event Type
+          </label>
+
+          <select id="analyticsEventType">
+
+            <option value="ALL">
+              All Event Types
+            </option>
+
+            <option value="pothole">
+              Pothole
+            </option>
+
+            <option value="road_damage">
+              Road Damage
+            </option>
+
+            <option value="waterlogging">
+              Waterlogging
+            </option>
+
+            <option value="vehicle_count">
+              Vehicle Count
+            </option>
+
+            <option value="congestion">
+              Congestion
+            </option>
+
+            <option value="anpr_alert">
+              ANPR Alert
+            </option>
+
+            <option value="rash_driving">
+              Rash Driving
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="filter-group">
+
+          <label for="analyticsSeverity">
+            Severity
+          </label>
+
+          <select id="analyticsSeverity">
+
+            <option value="ALL">
+              All Severities
+            </option>
+
+            <option value="CRITICAL">
+              Critical
+            </option>
+
+            <option value="HIGH">
+              High
+            </option>
+
+            <option value="MEDIUM">
+              Medium
+            </option>
+
+            <option value="LOW">
+              Low
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="filter-group">
+
+          <label for="analyticsPeriod">
+            Analysis Period
+          </label>
+
+          <select id="analyticsPeriod">
+
+            <option value="ALL">
+              All Available Data
+            </option>
+
+            <option value="7">
+              Last 7 Days
+            </option>
+
+            <option value="30">
+              Last 30 Days
+            </option>
+
+            <option value="90">
+              Last 90 Days
+            </option>
+
+          </select>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           KPI SUMMARY
+           ================================================= -->
+
+      <section class="analytics-kpi-grid">
+
+        <article class="analytics-kpi-card">
+
+          <div class="kpi-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+
+          <div class="kpi-content">
+
+            <span class="kpi-label">
+              Total Issues
+            </span>
+
+            <strong
+              id="analyticsTotalIssues"
+              class="kpi-value"
+            >
+              —
+            </strong>
+
+            <span
+              id="analyticsTotalIssuesMeta"
+              class="kpi-meta"
+            >
+              Awaiting data
+            </span>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-kpi-card">
+
+          <div class="kpi-icon">
+            <i class="fa-solid fa-road"></i>
+          </div>
+
+          <div class="kpi-content">
+
+            <span class="kpi-label">
+              Road Health
+            </span>
+
+            <strong
+              id="analyticsRoadHealth"
+              class="kpi-value"
+            >
+              —
+            </strong>
+
+            <span
+              id="analyticsRoadHealthMeta"
+              class="kpi-meta"
+            >
+              Awaiting data
+            </span>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-kpi-card">
+
+          <div class="kpi-icon">
+            <i class="fa-solid fa-ticket"></i>
+          </div>
+
+          <div class="kpi-content">
+
+            <span class="kpi-label">
+              Tickets Created
+            </span>
+
+            <strong
+              id="analyticsTickets"
+              class="kpi-value"
+            >
+              —
+            </strong>
+
+            <span
+              id="analyticsTicketsMeta"
+              class="kpi-meta"
+            >
+              Awaiting data
+            </span>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-kpi-card">
+
+          <div class="kpi-icon">
+            <i class="fa-solid fa-bus"></i>
+          </div>
+
+          <div class="kpi-content">
+
+            <span class="kpi-label">
+              Active Buses
+            </span>
+
+            <strong
+              id="analyticsActiveBuses"
+              class="kpi-value"
+            >
+              —
+            </strong>
+
+            <span
+              id="analyticsBusesMeta"
+              class="kpi-meta"
+            >
+              Awaiting data
+            </span>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           CHART ROW — ISSUE TREND
+           ================================================= -->
+
+      <section class="analytics-grid two-column">
+
+        <article class="analytics-card chart-card large-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                ISSUE ACTIVITY
+              </span>
+
+              <h3>
+                Issues Detected Over Time
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-chart-line"></i>
+            </span>
+
+          </div>
+
+          <div
+            class="chart-container"
+            id="issueTrendState"
+          >
+
+            <canvas
+              id="issueTrendChart"
+            ></canvas>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-card chart-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                ISSUE CLASSIFICATION
+              </span>
+
+              <h3>
+                Issues by Type
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-chart-pie"></i>
+            </span>
+
+          </div>
+
+          <div
+            class="chart-container chart-container-small"
+            id="issueTypeState"
+          >
+
+            <canvas
+              id="issueTypeChart"
+            ></canvas>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           SEVERITY + TICKET ANALYSIS
+           ================================================= -->
+
+      <section class="analytics-grid two-column">
+
+        <article class="analytics-card chart-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                RISK DISTRIBUTION
+              </span>
+
+              <h3>
+                Severity Distribution
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-layer-group"></i>
+            </span>
+
+          </div>
+
+          <div
+            class="chart-container chart-container-small"
+            id="severityState"
+          >
+
+            <canvas
+              id="severityChart"
+            ></canvas>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-card chart-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                AUTHORITY RESPONSE
+              </span>
+
+              <h3>
+                Ticket Status
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-ticket"></i>
+            </span>
+
+          </div>
+
+          <div
+            class="chart-container chart-container-small"
+            id="ticketStatusState"
+          >
+
+            <canvas
+              id="ticketStatusChart"
+            ></canvas>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           ROAD HEALTH SECTION
+           ================================================= -->
+
+      <section class="analytics-card road-analysis-card">
+
+        <div class="card-header">
+
+          <div>
+
+            <span class="card-kicker">
+              ROAD CONDITION
+            </span>
+
+            <h3>
+              Road Health Analysis
+            </h3>
+
+          </div>
+
+          <span class="card-icon">
+            <i class="fa-solid fa-road"></i>
+          </span>
+
+        </div>
+
+
+        <div
+          id="roadHealthAnalytics"
+          class="road-health-table"
+        >
+
+          <div class="analytics-empty-state">
+
+            <i class="fa-solid fa-road-circle-exclamation"></i>
+
+            <p>
+              Loading road health data...
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           TRAFFIC + BUS ANALYSIS
+           ================================================= -->
+
+      <section class="analytics-grid two-column">
+
+        <article class="analytics-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                MOBILITY
+              </span>
+
+              <h3>
+                Traffic Activity
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-car-side"></i>
+            </span>
+
+          </div>
+
+          <div
+            id="trafficAnalysis"
+            class="analysis-summary"
+          >
+
+            <div class="analytics-empty-state">
+
+              <i class="fa-solid fa-chart-column"></i>
+
+              <p>
+                Traffic analytics will appear when
+                backend data is available.
+              </p>
+
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <article class="analytics-card">
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="card-kicker">
+                FLEET MONITORING
+              </span>
+
+              <h3>
+                Bus Coverage
+              </h3>
+
+            </div>
+
+            <span class="card-icon">
+              <i class="fa-solid fa-bus"></i>
+            </span>
+
+          </div>
+
+          <div
+            id="busCoverageAnalysis"
+            class="analysis-summary"
+          >
+
+            <div class="analytics-empty-state">
+
+              <i class="fa-solid fa-bus-simple"></i>
+
+              <p>
+                Bus coverage analytics will appear
+                when backend data is available.
+              </p>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           ANALYTICS INSIGHTS
+           ================================================= -->
+
+      <section class="analytics-card insights-card">
+
+        <div class="card-header">
+
+          <div>
+
+            <span class="card-kicker">
+              DATA SUMMARY
+            </span>
+
+            <h3>
+              Operational Insights
+            </h3>
+
+          </div>
+
+          <span class="card-icon">
+            <i class="fa-solid fa-lightbulb"></i>
+          </span>
+
+        </div>
+
+
+        <div
+          id="analyticsInsights"
+          class="insights-grid"
+        >
+
+          <div class="analytics-empty-state">
+
+            <i class="fa-solid fa-circle-info"></i>
+
+            <p>
+              Insights will be generated from available
+              backend analytics data.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           DATA STATUS
+           ================================================= -->
+
+      <div
+        id="analyticsDataStatus"
+        class="analytics-data-status"
+      >
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+        Loading analytics data...
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- =====================================================
+       CHART.JS
+       ===================================================== -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+  ></script>
+
+
+  <!-- =====================================================
+       CONFIG
+       ===================================================== -->
+
+  <script src="config.js"></script>
+
+
+  <!-- =====================================================
+       ANALYTICS JAVASCRIPT
+       ===================================================== -->
+
+  <script src="analytics.js"></script>
+
+</body>
+</html>

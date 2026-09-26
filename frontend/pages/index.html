@@ -5,194 +5,575 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Urban Intelligence Platform — Dashboard</title>
+  <title>Urban Intelligence Platform — Municipal Command Center</title>
 
-  <!-- Leaflet CSS -->
+  <!-- =====================================================
+       FONT AWESOME
+  ====================================================== -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  >
+
+  <!-- =====================================================
+       LEAFLET CSS
+  ====================================================== -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-  <!-- Dashboard CSS -->
+  <!-- =====================================================
+       DASHBOARD CSS
+  ====================================================== -->
   <link rel="stylesheet" href="style.css">
 </head>
 
+
 <body>
 
-  <!-- =========================
+  <!-- =====================================================
        SIDEBAR
-  ========================== -->
+  ====================================================== -->
 
   <aside id="sidebar">
 
+    <!-- BRAND / HEADER -->
     <div class="sidebar-header">
-      <h1>Urban Intelligence Platform</h1>
 
-      <p class="subtitle">
-        Live bus-fleet sensing dashboard (demo)
+      <div class="brand-block">
+
+        <div class="brand-icon">
+          <i class="fa-solid fa-city"></i>
+        </div>
+
+        <div class="brand-text">
+          <h1>Urban Intelligence Platform</h1>
+
+          <p class="subtitle">
+            Municipal Command Center
+          </p>
+        </div>
+
+      </div>
+
+
+      <!-- BACKEND CONNECTION STATUS -->
+
+      <div
+        id="backendConnectionBar"
+        class="backend-connection-bar"
+        onclick="CONFIG.openConfigModal()"
+        title="Click to view or switch backend API URL"
+      >
+
+        <span
+          class="pulse-dot"
+          id="backendPulse"
+        ></span>
+
+        <span id="backendStatusLabel">
+          CONNECTING...
+        </span>
+
+        <span class="api-gear">
+          <i class="fa-solid fa-gear"></i>
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         PAGE NAVIGATION
+    ==================================================== -->
+
+    <section class="navigation-section">
+
+      <div class="navigation-title">
+        <i class="fa-solid fa-compass"></i>
+        <span>Operations</span>
+      </div>
+
+
+      <!-- MAIN DASHBOARD -->
+
+      <a
+        href="index.html"
+        class="nav-btn active"
+      >
+        <i class="fa-solid fa-map-location-dot"></i>
+
+        <span>
+          Main Dashboard
+        </span>
+      </a>
+
+
+      <!-- ANALYTICS -->
+
+      <a
+        href="analytics.html"
+        class="nav-btn"
+      >
+        <i class="fa-solid fa-chart-line"></i>
+
+        <span>
+          Analytics
+        </span>
+      </a>
+
+
+      <!-- BUS MONITOR -->
+
+      <a
+        href="bus-monitor.html"
+        class="nav-btn"
+      >
+        <i class="fa-solid fa-bus"></i>
+
+        <span>
+          Bus Monitor
+        </span>
+      </a>
+
+    </section>
+
+
+    <!-- ===================================================
+         MAP CONTROLS
+    ==================================================== -->
+
+    <section id="controls">
+
+      <div class="controls-heading">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Map Controls</span>
+      </div>
+
+
+      <div class="controls-actions">
+
+        <button
+          type="button"
+          id="heatBtn"
+          class="secondary-btn"
+          onclick="toggleHeatmap()"
+        >
+          <i class="fa-solid fa-fire"></i>
+          <span>Heatmap</span>
+        </button>
+
+
+        <button
+          type="button"
+          class="secondary-btn"
+          onclick="fetchAll()"
+        >
+          <i class="fa-solid fa-rotate"></i>
+          <span>Refresh</span>
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         EVENT FILTERS
+    ==================================================== -->
+
+    <section id="mapFilters">
+
+      <div class="controls-heading">
+        <i class="fa-solid fa-filter"></i>
+        <span>Event Filters</span>
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="eventTypeFilter">
+          Event Type
+        </label>
+
+        <select id="eventTypeFilter">
+
+          <option value="ALL">
+            All Event Types
+          </option>
+
+          <option value="pothole">
+            Pothole
+          </option>
+
+          <option value="road_damage">
+            Road Damage
+          </option>
+
+          <option value="waterlogging">
+            Waterlogging
+          </option>
+
+          <option value="vehicle_count">
+            Vehicle Count
+          </option>
+
+          <option value="congestion">
+            Congestion
+          </option>
+
+          <option value="anpr_alert">
+            ANPR Alert
+          </option>
+
+          <option value="rash_driving">
+            Rash Driving
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="severityFilter">
+          Severity
+        </label>
+
+        <select id="severityFilter">
+
+          <option value="ALL">
+            All Severities
+          </option>
+
+          <option value="CRITICAL">
+            Critical
+          </option>
+
+          <option value="HIGH">
+            High
+          </option>
+
+          <option value="MEDIUM">
+            Medium
+          </option>
+
+          <option value="LOW">
+            Low
+          </option>
+
+        </select>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         TOTAL EVENTS
+    ==================================================== -->
+
+    <section class="stat-box total-events-box">
+
+      <div class="stat-heading">
+
+        <span>
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          Total Events
+        </span>
+
+      </div>
+
+      <p id="statTotal">
+        —
       </p>
 
-      <div id="backendConnectionBar" class="backend-connection-bar" onclick="CONFIG.openConfigModal()" title="Click to view or switch backend API URL">
-        <span class="pulse-dot" id="backendPulse"></span>
-        <span id="backendStatusLabel">CONNECTING...</span>
-        <span class="api-gear">⚙️</span>
-      </div>
-    </div>
+    </section>
 
 
-    <!-- Controls -->
-
-    <div id="controls">
-      <button
-        type="button"
-        onclick="toggleHeatmap()"
-        id="heatBtn"
-      >
-        Toggle Heatmap
-      </button>
-
-      <button
-        type="button"
-        onclick="fetchAll()"
-      >
-        Refresh
-      </button>
-    </div>
-
-
-    <!-- Total Events -->
-
-    <div class="stat-box total-events-box">
-      <h2>Total Events</h2>
-
-      <p id="statTotal">0</p>
-    </div>
-
-
-    <!-- =========================
+    <!-- ===================================================
          IMPACT DASHBOARD
-    ========================== -->
+    ==================================================== -->
 
     <section class="impact-section">
 
       <h2 class="section-title">
+        <i class="fa-solid fa-gauge-high"></i>
         Impact Dashboard
       </h2>
 
+
       <div class="impact-grid">
 
+        <!-- BUSES -->
+
         <div class="impact-card">
-          <span class="impact-icon">🚌</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-bus"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactBuses">—</p>
-            <span class="impact-label">Buses Monitoring</span>
+
+            <p
+              class="impact-value"
+              id="impactBuses"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Buses Monitoring
+            </span>
+
           </div>
+
         </div>
 
 
+        <!-- ROAD KM -->
+
         <div class="impact-card">
-          <span class="impact-icon">🛣️</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-road"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactRoadKm">—</p>
-            <span class="impact-label">Road KM Monitored</span>
+
+            <p
+              class="impact-value"
+              id="impactRoadKm"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Road KM Monitored
+            </span>
+
           </div>
+
         </div>
 
 
+        <!-- ISSUES -->
+
         <div class="impact-card">
-          <span class="impact-icon">🚨</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactIssues">—</p>
-            <span class="impact-label">Issues Detected</span>
+
+            <p
+              class="impact-value"
+              id="impactIssues"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Issues Detected
+            </span>
+
           </div>
+
         </div>
 
 
+        <!-- TICKETS -->
+
         <div class="impact-card">
-          <span class="impact-icon">🎫</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-ticket"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactTickets">—</p>
-            <span class="impact-label">Tickets Created</span>
+
+            <p
+              class="impact-value"
+              id="impactTickets"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Tickets Created
+            </span>
+
           </div>
+
         </div>
 
 
+        <!-- RESOLVED -->
+
         <div class="impact-card">
-          <span class="impact-icon">✅</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactResolved">—</p>
-            <span class="impact-label">Issues Resolved</span>
+
+            <p
+              class="impact-value"
+              id="impactResolved"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Issues Resolved
+            </span>
+
           </div>
+
         </div>
 
 
+        <!-- RESPONSE -->
+
         <div class="impact-card">
-          <span class="impact-icon">⏱️</span>
+
+          <span class="impact-icon">
+            <i class="fa-solid fa-stopwatch"></i>
+          </span>
 
           <div class="impact-content">
-            <p class="impact-value" id="impactResponse">—</p>
-            <span class="impact-label">Avg Response Time</span>
+
+            <p
+              class="impact-value"
+              id="impactResponse"
+            >
+              —
+            </p>
+
+            <span class="impact-label">
+              Avg Response Time
+            </span>
+
           </div>
+
         </div>
 
       </div>
+
     </section>
 
 
-    <!-- =========================
+    <!-- ===================================================
          EVENTS BY TYPE
-    ========================== -->
+    ==================================================== -->
 
     <section class="stat-box by-type-box">
 
-      <h2>By Type</h2>
+      <h2 class="section-title">
+        <i class="fa-solid fa-layer-group"></i>
+        Events by Type
+      </h2>
 
       <div id="statByType">
-        -
+        —
       </div>
 
     </section>
 
 
-    <!-- =========================
+    <!-- ===================================================
          ROAD HEALTH
-    ========================== -->
+    ==================================================== -->
 
     <section class="road-health-section">
 
       <h2 class="section-title">
+        <i class="fa-solid fa-road-circle-check"></i>
         Road Health
       </h2>
 
+
       <div class="road-health-card">
 
+        <!-- HEADER -->
+
         <div class="health-header">
-          <span class="corridor-title" id="roadCorridor">Main Corridor</span>
-          <span class="health-score-badge" id="roadHealthScore">—</span>
+
+          <span
+            class="corridor-title"
+            id="roadCorridor"
+          >
+            Main Corridor
+          </span>
+
+          <span
+            class="health-score-badge"
+            id="roadHealthScore"
+          >
+            —
+          </span>
+
         </div>
+
+
+        <!-- HEALTH DETAILS -->
 
         <div class="road-health-grid">
 
           <div class="rh-item">
-            <span class="rh-label">Hazards (30d)</span>
-            <span class="rh-value" id="roadHazards">—</span>
+
+            <span class="rh-label">
+              Hazards (30d)
+            </span>
+
+            <span
+              class="rh-value"
+              id="roadHazards"
+            >
+              —
+            </span>
+
           </div>
 
+
           <div class="rh-item">
-            <span class="rh-label">Trend</span>
-            <span class="rh-value" id="roadTrend">—</span>
+
+            <span class="rh-label">
+              Trend
+            </span>
+
+            <span
+              class="rh-value"
+              id="roadTrend"
+            >
+              —
+            </span>
+
           </div>
 
         </div>
 
+
+        <!-- RECOMMENDATION -->
+
         <div class="rh-recommendation-box">
-          <span class="rh-label">Recommendation</span>
-          <p class="rh-recommendation-text" id="roadRecommendation">—</p>
+
+          <span class="rh-label">
+            Recommendation
+          </span>
+
+          <p
+            class="rh-recommendation-text"
+            id="roadRecommendation"
+          >
+            —
+          </p>
+
         </div>
 
       </div>
@@ -200,13 +581,14 @@
     </section>
 
 
-    <!-- =========================
+    <!-- ===================================================
          LIVE EVENT FEED
-    ========================== -->
+    ==================================================== -->
 
     <section class="feed-section">
 
       <h2 class="section-title">
+        <i class="fa-solid fa-tower-broadcast"></i>
         Live Event Feed
       </h2>
 
@@ -217,26 +599,42 @@
   </aside>
 
 
-  <!-- =========================
+  <!-- =====================================================
        MAP
-  ========================== -->
+  ====================================================== -->
 
   <main id="map"></main>
 
 
-  <!-- =========================
+  <!-- =====================================================
        EVENT DETAILS MODAL
-  ========================== -->
+  ====================================================== -->
 
-  <div id="eventModal">
+  <div
+    id="eventModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="eventTitle"
+  >
 
-    <div class="modal-box">
+    <div class="modal-box event-modal-box">
+
+      <!-- HEADER -->
 
       <div class="modal-header">
 
-        <h2 id="eventTitle">
-          Event Details
-        </h2>
+        <div>
+
+          <span class="modal-eyebrow">
+            Detection Record
+          </span>
+
+          <h2 id="eventTitle">
+            Event Details
+          </h2>
+
+        </div>
+
 
         <button
           type="button"
@@ -244,132 +642,234 @@
           onclick="closeEventModal()"
           aria-label="Close event details"
         >
-          ×
+          <i class="fa-solid fa-xmark"></i>
         </button>
 
       </div>
 
 
-      <div class="detail-row">
-        <span class="detail-label">Event ID</span>
+      <div class="event-modal-content">
 
-        <span
-          class="detail-value"
-          id="detailId"
-        >
-          -
-        </span>
+        <!-- =================================================
+             EVENT INFORMATION
+        ================================================== -->
+
+        <div class="event-details-column">
+
+          <h3 class="modal-section-title">
+            <i class="fa-solid fa-circle-info"></i>
+            Detection Information
+          </h3>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              Event ID
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailId"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              Event Type
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailType"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              Bus ID
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailBus"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              Confidence
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailConfidence"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              AI Severity
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailSeverity"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              GPS
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailGPS"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span class="detail-label">
+              Timestamp
+            </span>
+
+            <span
+              class="detail-value"
+              id="detailTimestamp"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- AUTHORITY ACTION -->
+
+          <div class="authority-action-box">
+
+            <div class="authority-action-header">
+
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+
+              <span>
+                Authority Action
+              </span>
+
+            </div>
+
+            <p>
+              Create a maintenance ticket for this detected issue
+              and forward it to the responsible municipal department.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             EVIDENCE
+        ================================================== -->
+
+        <div class="evidence-column">
+
+          <h3 class="modal-section-title">
+            <i class="fa-solid fa-camera"></i>
+            Evidence Frame
+          </h3>
+
+
+          <div id="evidenceContainer">
+
+            <div class="evidence-frame">
+
+              <img
+                id="evidenceImage"
+                alt="Detection evidence"
+              >
+
+
+              <div
+                class="evidence-overlay"
+                id="noEvidence"
+              >
+
+                <i class="fa-regular fa-image"></i>
+
+                <span>
+                  Evidence image not available.
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <p class="evidence-note">
+            Evidence is loaded only when available from the
+            detection record.
+          </p>
+
+        </div>
+
       </div>
 
 
-      <div class="detail-row">
-        <span class="detail-label">Event Type</span>
+      <!-- =================================================
+           MODAL FOOTER
+      ================================================== -->
 
-        <span
-          class="detail-value"
-          id="detailType"
-        >
-          -
-        </span>
-      </div>
-
-
-      <div class="detail-row">
-        <span class="detail-label">Bus ID</span>
-
-        <span
-          class="detail-value"
-          id="detailBus"
-        >
-          -
-        </span>
-      </div>
-
-
-      <div class="detail-row">
-        <span class="detail-label">Confidence</span>
-
-        <span
-          class="detail-value"
-          id="detailConfidence"
-        >
-          -
-        </span>
-      </div>
-
-
-      <div class="detail-row">
-        <span class="detail-label">AI Severity</span>
-
-        <span
-          class="detail-value"
-          id="detailSeverity"
-        >
-          -
-        </span>
-      </div>
-
-
-      <div class="detail-row">
-        <span class="detail-label">GPS</span>
-
-        <span
-          class="detail-value"
-          id="detailGPS"
-        >
-          -
-        </span>
-      </div>
-
-
-      <div class="detail-row">
-        <span class="detail-label">Timestamp</span>
-
-        <span
-          class="detail-value"
-          id="detailTimestamp"
-        >
-          -
-        </span>
-      </div>
-
-
-      <!-- Evidence -->
-
-      <div id="evidenceContainer">
-
-        <p class="evidence-title">
-          Evidence
-        </p>
-
-        <img
-          id="evidenceImage"
-          alt="Evidence Image"
-        >
-
-        <p id="noEvidence">
-          Evidence image not available.
-        </p>
-
-      </div>
-
-
-      <!-- Actions -->
-
-      <div class="modal-actions">
+      <div class="modal-footer">
 
         <button
           type="button"
+          class="secondary-btn"
           onclick="viewEvidence()"
         >
+          <i class="fa-solid fa-expand"></i>
           View Evidence
         </button>
+
 
         <button
           type="button"
           class="primary-btn"
           onclick="openTicketModal()"
         >
+          <i class="fa-solid fa-ticket"></i>
           Create Ticket
         </button>
 
@@ -380,19 +880,35 @@
   </div>
 
 
-  <!-- =========================
+  <!-- =====================================================
        CREATE TICKET MODAL
-  ========================== -->
+  ====================================================== -->
 
-  <div id="ticketModal">
+  <div
+    id="ticketModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ticketModalTitle"
+  >
 
     <div class="modal-box ticket-box">
 
+      <!-- HEADER -->
+
       <div class="modal-header">
 
-        <h2>
-          Create Maintenance Ticket
-        </h2>
+        <div>
+
+          <span class="modal-eyebrow">
+            Municipal Workflow
+          </span>
+
+          <h2 id="ticketModalTitle">
+            Create Maintenance Ticket
+          </h2>
+
+        </div>
+
 
         <button
           type="button"
@@ -400,13 +916,13 @@
           onclick="closeTicketModal()"
           aria-label="Close ticket form"
         >
-          ×
+          <i class="fa-solid fa-xmark"></i>
         </button>
 
       </div>
 
 
-      <!-- Department -->
+      <!-- DEPARTMENT -->
 
       <div class="form-group">
 
@@ -433,7 +949,7 @@
       </div>
 
 
-      <!-- AI Severity -->
+      <!-- AI SEVERITY -->
 
       <div class="form-group">
 
@@ -445,13 +961,13 @@
           id="ticketSeverity"
           class="severity-display"
         >
-          -
+          —
         </div>
 
       </div>
 
 
-      <!-- Ticket Priority -->
+      <!-- TICKET PRIORITY -->
 
       <div class="form-group">
 
@@ -461,17 +977,28 @@
 
         <select id="ticketPriority">
 
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
-          <option value="CRITICAL">CRITICAL</option>
+          <option value="LOW">
+            LOW
+          </option>
+
+          <option value="MEDIUM">
+            MEDIUM
+          </option>
+
+          <option value="HIGH">
+            HIGH
+          </option>
+
+          <option value="CRITICAL">
+            CRITICAL
+          </option>
 
         </select>
 
       </div>
 
 
-      <!-- Notes -->
+      <!-- NOTES -->
 
       <div class="form-group">
 
@@ -487,18 +1014,25 @@
       </div>
 
 
+      <!-- CREATE -->
+
       <button
         type="button"
         class="primary-btn create-ticket-btn"
         onclick="createTicket()"
       >
+        <i class="fa-solid fa-paper-plane"></i>
         Create Ticket
       </button>
 
 
+      <!-- STATUS -->
+
       <div
         id="ticketStatus"
         class="status-message"
+        role="status"
+        aria-live="polite"
       ></div>
 
     </div>
@@ -506,17 +1040,34 @@
   </div>
 
 
-  <!-- Leaflet JS -->
+  <!-- =====================================================
+       LEAFLET JS
+  ====================================================== -->
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
 
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-  <!-- Dashboard Configuration & Dynamic API Base -->
+  <!-- =====================================================
+       LEAFLET HEATMAP
+  ====================================================== -->
+
+  <script
+    src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"
+  ></script>
+
+
+  <!-- =====================================================
+       DASHBOARD CONFIGURATION
+  ====================================================== -->
 
   <script src="config.js"></script>
 
-  <!-- Dashboard JavaScript -->
+
+  <!-- =====================================================
+       DASHBOARD JAVASCRIPT
+  ====================================================== -->
 
   <script src="script.js"></script>
 
