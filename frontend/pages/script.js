@@ -1,13 +1,20 @@
 // ======================================================
+// URBAN INTELLIGENCE PLATFORM
+// MAIN DASHBOARD SCRIPT
+// ======================================================
+
+
+// ======================================================
 // CONFIGURATION
 // ======================================================
 
 const DEFAULT_LAT = 19.4560;
 const DEFAULT_LNG = 72.8110;
 
-const API_BASE = (typeof CONFIG !== "undefined" && CONFIG.getApiBase)
-  ? CONFIG.getApiBase()
-  : "http://localhost:5000";
+const API_BASE =
+  (typeof CONFIG !== "undefined" && CONFIG.getApiBase)
+    ? CONFIG.getApiBase()
+    : "http://localhost:5000";
 
 
 // ======================================================
@@ -31,6 +38,7 @@ L.tileLayer(
 const markersLayer =
   L.layerGroup().addTo(map);
 
+
 const busMarkersLayer =
   L.layerGroup().addTo(map);
 
@@ -41,10 +49,18 @@ let heatVisible = false;
 
 
 // ======================================================
-// SELECTED EVENT
+// APPLICATION STATE
 // ======================================================
 
 let selectedEvent = null;
+
+let allEvents = [];
+
+let currentEventFilter = "ALL";
+
+let currentSeverityFilter = "ALL";
+
+let isFetching = false;
 
 
 // ======================================================
@@ -52,22 +68,14 @@ let selectedEvent = null;
 // ======================================================
 
 const colorFor = (type) => ({
-
-  pothole: "#e74c3c",
-
-  road_damage: "#e67e22",
-
-  waterlogging: "#3498db",
-
-  vehicle_count: "#95a5a6",
-
-  congestion: "#f1c40f",
-
-  anpr_alert: "#9b59b6",
-
-  rash_driving: "#e74c3c"
-
-}[type] || "#4da3ff");
+  pothole: "#d64545",
+  road_damage: "#d99100",
+  waterlogging: "#318fc1",
+  vehicle_count: "#78909c",
+  congestion: "#c98a00",
+  anpr_alert: "#7657c8",
+  rash_driving: "#d64545"
+}[type] || "#38a9d6");
 
 
 // ======================================================
@@ -75,11 +83,44 @@ const colorFor = (type) => ({
 // ======================================================
 
 function formatEventName(type) {
-
   return String(type || "event")
     .replaceAll("_", " ")
     .replace(/\b\w/g, letter => letter.toUpperCase());
+}
 
+
+// ======================================================
+// SAFE ELEMENT HELPER
+// ======================================================
+
+function getElement(id) {
+  return document.getElementById(id);
+}
+
+
+// ======================================================
+// SAFE TEXT UPDATE
+// ======================================================
+
+function setText(id, value) {
+  const element = getElement(id);
+
+  if (element) {
+    element.innerText = value;
+  }
+}
+
+
+// ======================================================
+// GET EVENT ID
+// ======================================================
+
+function getEventId(event) {
+  if (!event) {
+    return null;
+  }
+
+  return event.id ?? event.event_id ?? null;
 }
 
 
@@ -87,42 +128,51 @@ function formatEventName(type) {
 // GET SEVERITY
 // ======================================================
 //
-// First use severity supplied by AI.
-// If unavailable, use confidence as fallback.
+// Priority:
+// 1. Explicit AI/backend severity
+// 2. Confidence fallback
+//
+// The fallback is used only when the backend does not
+// provide a severity value.
 // ======================================================
 
 function getSeverity(event) {
-
-  if (
-    event.extra &&
-    event.extra.severity
-  ) {
-
-    return event.extra.severity.toUpperCase();
-
+  if (!event) {
+    return "LOW";
   }
 
+  const possibleSeverity =
+    event.extra &&
+    event.extra.severity;
+
+  if (
+    possibleSeverity !== undefined &&
+    possibleSeverity !== null &&
+    String(possibleSeverity).trim() !== ""
+  ) {
+    return String(possibleSeverity).toUpperCase();
+  }
+
+  if (
+    event.severity !== undefined &&
+    event.severity !== null &&
+    String(event.severity).trim() !== ""
+  ) {
+    return String(event.severity).toUpperCase();
+  }
 
   const confidence =
     Number(event.confidence || 0);
 
-
   if (confidence >= 0.85) {
-
     return "HIGH";
-
   }
-
 
   if (confidence >= 0.65) {
-
     return "MEDIUM";
-
   }
 
-
   return "LOW";
-
 }
 
 
@@ -131,711 +181,183 @@ function getSeverity(event) {
 // ======================================================
 
 function severityClass(severity) {
-
   return {
-
     CRITICAL: "severity-critical",
-
     HIGH: "severity-high",
-
     MEDIUM: "severity-medium",
-
     LOW: "severity-low"
-
   }[severity] || "severity-low";
-
 }
 
 
 // ======================================================
-// SHOW EVENT DETAILS
+// FILTER EVENTS
 // ======================================================
 
-function showEventDetails(event) {
+function getFilteredEvents() {
+  return allEvents.filter(event => {
+    const eventType =
+      String(event.event_type || "").toLowerCase();
 
-  selectedEvent = event;
+    const severity =
+      getSeverity(event);
 
+    const typeMatches =
+      currentEventFilter === "ALL" ||
+      eventType === currentEventFilter.toLowerCase();
 
-  const severity =
-    getSeverity(event);
+    const severityMatches =
+      currentSeverityFilter === "ALL" ||
+      severity === currentSeverityFilter;
 
-
-  document.getElementById(
-    "eventTitle"
-  ).innerText =
-    `${formatEventName(event.event_type).toUpperCase()} DETECTED`;
-
-
-  const detailIdEl =
-    document.getElementById("detailId");
-
-  if (detailIdEl) {
-
-    detailIdEl.innerText =
-      event.id || event.event_id || "-";
-
-  }
-
-
-  if (
-    event.latitude !== undefined &&
-    event.longitude !== undefined
-  ) {
-
-    map.setView(
-      [
-        Number(event.latitude),
-        Number(event.longitude)
-      ],
-      15,
-      {
-        animate: true
-      }
-    );
-
-  }
-
-
-  document.getElementById(
-    "detailType"
-  ).innerText =
-    formatEventName(event.event_type);
-
-
-  document.getElementById(
-    "detailBus"
-  ).innerText =
-    event.bus_id || "-";
-
-
-  document.getElementById(
-    "detailConfidence"
-  ).innerText =
-    `${(Number(event.confidence || 0) * 100).toFixed(0)}%`;
-
-
-  const severityElement =
-    document.getElementById("detailSeverity");
-
-
-  severityElement.innerText =
-    severity;
-
-
-  severityElement.className =
-    `detail-value badge ${severityClass(severity)}`;
-
-
-  document.getElementById(
-    "detailGPS"
-  ).innerText =
-    `${Number(event.latitude).toFixed(5)}, ${Number(event.longitude).toFixed(5)}`;
-
-
-  document.getElementById(
-    "detailTimestamp"
-  ).innerText =
-    new Date(event.timestamp).toLocaleString();
-
-
-  // ------------------------------------------
-  // Evidence
-  // ------------------------------------------
-
-  const image =
-    document.getElementById("evidenceImage");
-
-  const noEvidence =
-    document.getElementById("noEvidence");
-
-  const evidenceUrl =
-    getEvidenceDataUrl(event);
-
-  image.src = evidenceUrl;
-  image.style.display = "block";
-  noEvidence.style.display = "none";
-
-
-  document.getElementById(
-    "eventModal"
-  ).style.display = "flex";
-
+    return typeMatches && severityMatches;
+  });
 }
 
 
 // ======================================================
-// GET EVIDENCE DATA URL
+// APPLY EVENT FILTERS
 // ======================================================
 
-function getEvidenceDataUrl(event) {
-  if (event.image_base64 && event.image_base64.trim()) {
-    if (event.image_base64.startsWith("data:")) {
-      return event.image_base64;
+function applyEventFilters() {
+  renderEventMarkers(
+    getFilteredEvents()
+  );
+
+  renderEventFeed(
+    getFilteredEvents()
+  );
+}
+
+
+// ======================================================
+// RENDER EVENT MARKERS
+// ======================================================
+
+function renderEventMarkers(events) {
+  markersLayer.clearLayers();
+
+  events.forEach(event => {
+    const latitude =
+      Number(event.latitude);
+
+    const longitude =
+      Number(event.longitude);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return;
     }
-    return `data:image/jpeg;base64,${event.image_base64}`;
-  }
 
-  // Real pothole evidence snapshot
-  if (event.event_type === "pothole" || (event.extra && event.extra.evidence_image)) {
-    return "pothole.jpg";
-  }
+    const severity =
+      getSeverity(event);
 
-  const eventName =
-    formatEventName(event.event_type).toUpperCase();
+    const eventType =
+      String(event.event_type || "event");
 
-  const severity =
-    getSeverity(event);
+    const markerColor =
+      colorFor(eventType);
 
-  const busId =
-    event.bus_id || "BUS-001";
-
-  const gps =
-    `${Number(event.latitude || 0).toFixed(5)}, ${Number(event.longitude || 0).toFixed(5)}`;
-
-  const eventId =
-    event.id || event.event_id || "EVT";
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
-    <rect width="640" height="360" fill="#0f1720"/>
-    <rect x="20" y="20" width="600" height="320" rx="10" fill="#1c2632" stroke="#4da3ff" stroke-width="2"/>
-    <text x="320" y="70" font-family="Arial" font-size="20" font-weight="bold" fill="#4da3ff" text-anchor="middle">&#128652; URBAN AI EVIDENCE SNAPSHOT</text>
-    <line x1="40" y1="95" x2="600" y2="95" stroke="#263443" stroke-width="2"/>
-    <text x="320" y="155" font-family="Arial" font-size="22" font-weight="bold" fill="#e6edf3" text-anchor="middle">${eventName} DETECTED</text>
-    <text x="320" y="195" font-family="Arial" font-size="15" fill="#8fa3b8" text-anchor="middle">Event ID: #${eventId} | Bus Unit: ${busId}</text>
-    <text x="320" y="225" font-family="Arial" font-size="14" fill="#8fa3b8" text-anchor="middle">GPS Coordinates: ${gps}</text>
-    <rect x="220" y="255" width="200" height="36" rx="6" fill="#9a3412"/>
-    <text x="320" y="278" font-family="Arial" font-size="13" font-weight="bold" fill="#fed7aa" text-anchor="middle">AI SEVERITY: ${severity}</text>
-  </svg>`;
-
-  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-}
-
-
-// ======================================================
-// CLOSE EVENT MODAL
-// ======================================================
-
-function closeEventModal() {
-  document.getElementById("eventModal").style.display = "none";
-}
-
-
-// ======================================================
-// VIEW EVIDENCE
-// ======================================================
-
-function viewEvidence() {
-  if (!selectedEvent) {
-    alert("Please select an event first.");
-    return;
-  }
-
-  const evidenceUrl = getEvidenceDataUrl(selectedEvent);
-  const eventId = selectedEvent.id || selectedEvent.event_id || "1";
-  const eventType = formatEventName(selectedEvent.event_type).toUpperCase();
-  const severity = getSeverity(selectedEvent);
-  const busId = selectedEvent.bus_id || "BUS-102";
-  const gps = `${Number(selectedEvent.latitude || 0).toFixed(5)}, ${Number(selectedEvent.longitude || 0).toFixed(5)}`;
-  const confidence = Math.round(Number(selectedEvent.confidence || 0.90) * 100);
-  const ts = selectedEvent.timestamp ? new Date(selectedEvent.timestamp).toLocaleString() : new Date().toLocaleString();
-
-  const win = window.open("", "_blank");
-  if (win) {
-    win.document.write(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <title>Evidence Snapshot — Event #${eventId} [${eventType}]</title>
-        <style>
-          * { box-sizing: border-box; }
-          body {
-            margin: 0;
-            padding: 24px;
-            background: #080c14;
-            color: #f1f5f9;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-          }
-          .header {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #1e293b;
-          }
-          .title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            color: #38bdf8;
-          }
-          .meta-pill {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-          }
-          .stage {
-            position: relative;
-            max-width: 800px;
-            width: 100%;
-            background: #0f172a;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #334155;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-          }
-          .stage img {
-            width: 100%;
-            height: auto;
-            max-height: 70vh;
-            object-fit: contain;
-            display: block;
-          }
-          .ai-box {
-            position: absolute;
-            left: 13%;
-            top: 32%;
-            width: 72%;
-            height: 52%;
-            border: 3px solid #ef4444;
-            box-shadow: 0 0 16px rgba(239, 68, 68, 0.4), inset 0 0 16px rgba(239, 68, 68, 0.15);
-            pointer-events: none;
-          }
-          .ai-tag {
-            position: absolute;
-            top: -26px;
-            left: -3px;
-            background: #ef4444;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            border-radius: 4px 4px 0 0;
-            white-space: nowrap;
-          }
-          .hud-corner {
-            position: absolute;
-            padding: 10px 14px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(4px);
-            font-family: monospace;
-            font-size: 0.78rem;
-            color: #38bdf8;
-            border-radius: 6px;
-            pointer-events: none;
-          }
-          .hud-top-left { top: 12px; left: 12px; border: 1px solid rgba(56, 189, 248, 0.3); }
-          .hud-bottom-right { bottom: 12px; right: 12px; border: 1px solid rgba(56, 189, 248, 0.3); color: #34d399; }
-          .telemetry-grid {
-            width: 100%;
-            max-width: 800px;
-            margin-top: 16px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-          }
-          .card {
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            padding: 12px 14px;
-            border-radius: 8px;
-          }
-          .card-lbl { font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-          .card-val { font-size: 0.92rem; color: #f8fafc; font-weight: 600; }
-          .btn-bar {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 20px;
-          }
-          .btn {
-            background: #0284c7;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-          }
-          .btn-secondary {
-            background: #1e293b;
-            color: #cbd5e1;
-            border: 1px solid #334155;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="title">🚌 URBAN AI EVIDENCE SNAPSHOT (EVENT #${eventId})</div>
-          <div class="meta-pill">UNIT: ${busId} &bull; CAM-01</div>
-        </div>
-
-        <div class="stage">
-          <img src="${evidenceUrl}" alt="Pothole Evidence Photo" />
-          <div class="ai-box">
-            <span class="ai-tag">POTHOLE &bull; CONF: ${confidence}% &bull; ${severity}</span>
-          </div>
-          <div class="hud-corner hud-top-left">
-            SENSOR: FORWARD OPTICAL 4K<br>
-            DETECTOR: YOLOv8-POTHOLE-v2
-          </div>
-          <div class="hud-corner hud-bottom-right">
-            STATUS: VERIFIED &bull; LOGGED
-          </div>
-        </div>
-
-        <div class="telemetry-grid">
-          <div class="card">
-            <div class="card-lbl">Event Type</div>
-            <div class="card-val" style="color:#f87171;">${eventType}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">AI Confidence</div>
-            <div class="card-val" style="color:#34d399;">${confidence}%</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Severity Grade</div>
-            <div class="card-val" style="color:#fbbf24;">${severity}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">GPS Coordinates</div>
-            <div class="card-val">${gps}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Captured Timestamp</div>
-            <div class="card-val">${ts}</div>
-          </div>
-          <div class="card">
-            <div class="card-lbl">Bus Unit ID</div>
-            <div class="card-val">${busId}</div>
-          </div>
-        </div>
-
-        <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="window.close()">Close</button>
-          <a class="btn" href="${evidenceUrl}" download="pothole_event_${eventId}.jpg">Download Photo</a>
-        </div>
-      </body>
-      </html>
-    `);
-    win.document.close();
-  }
-}
-
-
-// ======================================================
-// OPEN TICKET MODAL
-// ======================================================
-
-function openTicketModal() {
-
-  if (!selectedEvent) {
-
-    alert(
-      "Please select an event first."
-    );
-
-    return;
-
-  }
-
-
-  const severity =
-    getSeverity(selectedEvent);
-
-
-  // Show AI severity separately
-
-  const severityDisplay =
-    document.getElementById(
-      "ticketSeverity"
-    );
-
-
-  severityDisplay.innerText =
-    severity;
-
-
-  severityDisplay.className =
-    `severity-display ${severityClass(severity)}`;
-
-
-  // Automatically use AI severity
-  // as the initial ticket priority.
-
-  document.getElementById(
-    "ticketPriority"
-  ).value =
-    severity;
-
-
-  document.getElementById(
-    "ticketNotes"
-  ).value = "";
-
-
-  document.getElementById(
-    "ticketStatus"
-  ).innerText = "";
-
-
-  document.getElementById(
-    "ticketModal"
-  ).style.display = "flex";
-
-}
-
-
-// ======================================================
-// CLOSE TICKET MODAL
-// ======================================================
-
-function closeTicketModal() {
-
-  document.getElementById(
-    "ticketModal"
-  ).style.display = "none";
-
-}
-
-
-// ======================================================
-// CREATE TICKET
-// ======================================================
-
-async function createTicket() {
-
-  if (!selectedEvent) {
-
-    alert(
-      "No event selected."
-    );
-
-    return;
-
-  }
-
-
-  const department =
-    document.getElementById(
-      "ticketDepartment"
-    ).value;
-
-
-  const priority =
-    document.getElementById(
-      "ticketPriority"
-    ).value;
-
-
-  const notes =
-    document.getElementById(
-      "ticketNotes"
-    ).value;
-
-
-  const payload = {
-
-    event_id:
-      selectedEvent.id,
-
-    department:
-      department,
-
-    priority:
-      priority,
-
-    assigned_to:
-      "",
-
-    notes:
-      notes
-
-  };
-
-
-  const statusElement =
-    document.getElementById(
-      "ticketStatus"
-    );
-
-
-  statusElement.innerText =
-    "Creating ticket...";
-
-
-  try {
-
-    const response =
-      await fetch(
-        `${API_BASE}/api/tickets`,
+    const marker =
+      L.circleMarker(
+        [latitude, longitude],
         {
+          radius: 7,
 
-          method: "POST",
+          color: markerColor,
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+          fillColor: markerColor,
 
-          body:
-            JSON.stringify(payload)
+          fillOpacity: 0.82,
 
+          weight: 2
         }
       );
 
+    marker.bindTooltip(
+      `${formatEventName(eventType)} — ${severity}`
+    );
 
-    const result =
-      await response.json();
+    marker.on(
+      "click",
+      () => showEventDetails(event)
+    );
 
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.error ||
-        "Failed to create ticket"
-      );
-
-    }
-
-
-    statusElement.innerText =
-      `Ticket created successfully: ${
-        result.ticket_id || "Created"
-      }`;
-
-
-    setTimeout(() => {
-
-      closeTicketModal();
-
-      closeEventModal();
-
-    }, 1200);
-
-
-  }
-  catch (error) {
-
-    console.error(error);
-
-    statusElement.innerText =
-      `Error: ${error.message}`;
-
-  }
-
+    marker.addTo(
+      markersLayer
+    );
+  });
 }
 
 
 // ======================================================
-// FETCH EVENTS
+// RENDER EVENT FEED
 // ======================================================
 
-async function fetchEvents() {
-
-  const response =
-    await fetch(
-      `${API_BASE}/api/events`
-    );
-
-
-  const events =
-    await response.json();
-
-
-  markersLayer.clearLayers();
-
-
+function renderEventFeed(events) {
   const feed =
-    document.getElementById(
-      "feed"
-    );
+    getElement("feed");
 
+  if (!feed) {
+    return;
+  }
 
   feed.innerHTML = "";
 
+  if (!events.length) {
+    feed.innerHTML = `
+      <div class="empty-state">
+        No events match the selected filters.
+      </div>
+    `;
+
+    return;
+  }
 
   events
     .slice(0, 30)
     .forEach(event => {
-
       const severity =
         getSeverity(event);
 
-
-      // ==========================================
-      // MAP MARKER
-      // ==========================================
-
-      L.circleMarker(
-        [
-          event.latitude,
-          event.longitude
-        ],
-        {
-
-          radius: 7,
-
-          color:
-            colorFor(event.event_type),
-
-          fillColor:
-            colorFor(event.event_type),
-
-          fillOpacity: 0.8
-
-        }
-      )
-      .bindTooltip(
-        `${formatEventName(event.event_type)} — ${severity}`
-      )
-      .on(
-        "click",
-        () => showEventDetails(event)
-      )
-      .addTo(markersLayer);
-
-
-      // ==========================================
-      // EVENT FEED ITEM
-      // ==========================================
+      const eventType =
+        event.event_type || "event";
 
       const div =
-        document.createElement(
-          "div"
-        );
-
+        document.createElement("div");
 
       div.className =
         "event-item";
 
+      const confidence =
+        Number(event.confidence || 0);
+
+      const confidenceText =
+        Number.isFinite(confidence)
+          ? `${(confidence * 100).toFixed(0)}%`
+          : "—";
+
+      let timeText = "—";
+
+      if (event.timestamp) {
+        const date =
+          new Date(event.timestamp);
+
+        if (!Number.isNaN(date.getTime())) {
+          timeText =
+            date.toLocaleTimeString();
+        }
+      }
 
       div.innerHTML = `
-
         <b>
-          ${formatEventName(
-            event.event_type
-          ).toUpperCase()}
+          ${formatEventName(eventType).toUpperCase()}
         </b>
 
         <span class="badge confidence-badge">
-          ${(Number(event.confidence || 0) * 100).toFixed(0)}%
+          ${confidenceText}
         </span>
 
         <span class="badge ${severityClass(severity)}">
@@ -845,22 +367,673 @@ async function fetchEvents() {
         <div class="event-meta">
           ${event.bus_id || "Unknown Bus"}
           ·
-          ${new Date(
-            event.timestamp
-          ).toLocaleTimeString()}
+          ${timeText}
         </div>
-
       `;
 
-
-      div.onclick =
-        () => showEventDetails(event);
-
+      div.addEventListener(
+        "click",
+        () => showEventDetails(event)
+      );
 
       feed.appendChild(div);
-
     });
+}
 
+
+// ======================================================
+// UPDATE FILTER STATE
+// ======================================================
+
+function updateFilters() {
+  const eventTypeFilter =
+    getElement("eventTypeFilter");
+
+  const severityFilter =
+    getElement("severityFilter");
+
+  currentEventFilter =
+    eventTypeFilter
+      ? eventTypeFilter.value
+      : "ALL";
+
+  currentSeverityFilter =
+    severityFilter
+      ? severityFilter.value
+      : "ALL";
+
+  applyEventFilters();
+}
+
+
+// ======================================================
+// INITIALIZE FILTER LISTENERS
+// ======================================================
+
+function initializeFilters() {
+  const eventTypeFilter =
+    getElement("eventTypeFilter");
+
+  const severityFilter =
+    getElement("severityFilter");
+
+  if (eventTypeFilter) {
+    eventTypeFilter.addEventListener(
+      "change",
+      updateFilters
+    );
+  }
+
+  if (severityFilter) {
+    severityFilter.addEventListener(
+      "change",
+      updateFilters
+    );
+  }
+}
+
+
+// ======================================================
+// SHOW EVENT DETAILS
+// ======================================================
+
+function showEventDetails(event) {
+  if (!event) {
+    return;
+  }
+
+  selectedEvent = event;
+
+  const severity =
+    getSeverity(event);
+
+  const eventType =
+    event.event_type || "event";
+
+  setText(
+    "eventTitle",
+    `${formatEventName(eventType).toUpperCase()} DETECTED`
+  );
+
+  setText(
+    "detailId",
+    getEventId(event) ?? "-"
+  );
+
+  const latitude =
+    Number(event.latitude);
+
+  const longitude =
+    Number(event.longitude);
+
+  if (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude)
+  ) {
+    map.setView(
+      [latitude, longitude],
+      15,
+      {
+        animate: true
+      }
+    );
+  }
+
+  setText(
+    "detailType",
+    formatEventName(eventType)
+  );
+
+  setText(
+    "detailBus",
+    event.bus_id || "-"
+  );
+
+  const confidence =
+    Number(event.confidence);
+
+  setText(
+    "detailConfidence",
+    Number.isFinite(confidence)
+      ? `${(confidence * 100).toFixed(0)}%`
+      : "—"
+  );
+
+  const severityElement =
+    getElement("detailSeverity");
+
+  if (severityElement) {
+    severityElement.innerText =
+      severity;
+
+    severityElement.className =
+      `detail-value badge ${severityClass(severity)}`;
+  }
+
+  if (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude)
+  ) {
+    setText(
+      "detailGPS",
+      `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+    );
+  } else {
+    setText(
+      "detailGPS",
+      "—"
+    );
+  }
+
+  let timestampText = "—";
+
+  if (event.timestamp) {
+    const timestamp =
+      new Date(event.timestamp);
+
+    if (!Number.isNaN(timestamp.getTime())) {
+      timestampText =
+        timestamp.toLocaleString();
+    }
+  }
+
+  setText(
+    "detailTimestamp",
+    timestampText
+  );
+
+  updateEvidenceDisplay(event);
+
+  const eventModal =
+    getElement("eventModal");
+
+  if (eventModal) {
+    eventModal.style.display =
+      "flex";
+  }
+}
+
+
+// ======================================================
+// EVIDENCE SOURCE RESOLUTION
+// ======================================================
+//
+// IMPORTANT:
+// No synthetic/fake evidence is generated.
+//
+// Only actual evidence returned by the backend is used.
+// ======================================================
+
+function getEvidenceSource(event) {
+  if (!event) {
+    return null;
+  }
+
+  // ------------------------------------------
+  // Direct base64 image
+  // ------------------------------------------
+
+  if (
+    typeof event.image_base64 === "string" &&
+    event.image_base64.trim() !== ""
+  ) {
+    const value =
+      event.image_base64.trim();
+
+    if (value.startsWith("data:image/")) {
+      return value;
+    }
+
+    return `data:image/jpeg;base64,${value}`;
+  }
+
+
+  // ------------------------------------------
+  // Direct image URL fields
+  // ------------------------------------------
+
+  const directFields = [
+    "evidence_url",
+    "evidence_image",
+    "image_url",
+    "image_path",
+    "evidence_path"
+  ];
+
+  for (const field of directFields) {
+    const value =
+      event[field];
+
+    if (
+      typeof value === "string" &&
+      value.trim() !== ""
+    ) {
+      return resolveEvidenceUrl(
+        value.trim()
+      );
+    }
+  }
+
+
+  // ------------------------------------------
+  // Nested extra object
+  // ------------------------------------------
+
+  if (
+    event.extra &&
+    typeof event.extra === "object"
+  ) {
+    const nestedFields = [
+      "evidence_url",
+      "evidence_image",
+      "image_url",
+      "image_path",
+      "evidence_path"
+    ];
+
+    for (const field of nestedFields) {
+      const value =
+        event.extra[field];
+
+      if (
+        typeof value === "string" &&
+        value.trim() !== ""
+      ) {
+        return resolveEvidenceUrl(
+          value.trim()
+        );
+      }
+    }
+  }
+
+
+  return null;
+}
+
+
+// ======================================================
+// RESOLVE EVIDENCE URL
+// ======================================================
+
+function resolveEvidenceUrl(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (
+    value.startsWith("data:image/")
+  ) {
+    return value;
+  }
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `${API_BASE}${value}`;
+  }
+
+  return `${API_BASE}/${value}`;
+}
+
+
+// ======================================================
+// UPDATE EVIDENCE DISPLAY
+// ======================================================
+
+function updateEvidenceDisplay(event) {
+  const image =
+    getElement("evidenceImage");
+
+  const noEvidence =
+    getElement("noEvidence");
+
+  const source =
+    getEvidenceSource(event);
+
+  if (!image || !noEvidence) {
+    return;
+  }
+
+  image.onload = () => {
+    image.style.display =
+      "block";
+
+    noEvidence.style.display =
+      "none";
+  };
+
+  image.onerror = () => {
+    image.removeAttribute("src");
+
+    image.style.display =
+      "none";
+
+    noEvidence.style.display =
+      "block";
+
+    noEvidence.innerText =
+      "Evidence is unavailable or could not be loaded.";
+  };
+
+  if (source) {
+    image.src =
+      source;
+
+    image.style.display =
+      "block";
+
+    noEvidence.style.display =
+      "none";
+  } else {
+    image.removeAttribute("src");
+
+    image.style.display =
+      "none";
+
+    noEvidence.style.display =
+      "block";
+
+    noEvidence.innerText =
+      "No evidence image is available for this event.";
+  }
+}
+
+
+// ======================================================
+// CLOSE EVENT MODAL
+// ======================================================
+
+function closeEventModal() {
+  const modal =
+    getElement("eventModal");
+
+  if (modal) {
+    modal.style.display =
+      "none";
+  }
+}
+
+
+// ======================================================
+// VIEW EVIDENCE
+// ======================================================
+//
+// Opens the real backend-provided evidence.
+// If no evidence exists, nothing fake is generated.
+// ======================================================
+
+function viewEvidence() {
+  if (!selectedEvent) {
+    alert(
+      "Please select an event first."
+    );
+
+    return;
+  }
+
+  const evidenceUrl =
+    getEvidenceSource(selectedEvent);
+
+  if (!evidenceUrl) {
+    alert(
+      "No evidence image is available for this event."
+    );
+
+    return;
+  }
+
+  const newWindow =
+    window.open(
+      evidenceUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+  if (!newWindow) {
+    alert(
+      "The evidence window was blocked by the browser. Please allow pop-ups for this dashboard."
+    );
+  }
+}
+
+
+// ======================================================
+// OPEN TICKET MODAL
+// ======================================================
+
+function openTicketModal() {
+  if (!selectedEvent) {
+    alert(
+      "Please select an event first."
+    );
+
+    return;
+  }
+
+  const severity =
+    getSeverity(selectedEvent);
+
+  const severityDisplay =
+    getElement("ticketSeverity");
+
+  if (severityDisplay) {
+    severityDisplay.innerText =
+      severity;
+
+    severityDisplay.className =
+      `severity-display ${severityClass(severity)}`;
+  }
+
+  const priority =
+    getElement("ticketPriority");
+
+  if (priority) {
+    const availableValues =
+      Array.from(priority.options)
+        .map(option => option.value);
+
+    if (
+      availableValues.includes(severity)
+    ) {
+      priority.value =
+        severity;
+    }
+  }
+
+  const notes =
+    getElement("ticketNotes");
+
+  if (notes) {
+    notes.value = "";
+  }
+
+  const status =
+    getElement("ticketStatus");
+
+  if (status) {
+    status.innerText = "";
+  }
+
+  const ticketModal =
+    getElement("ticketModal");
+
+  if (ticketModal) {
+    ticketModal.style.display =
+      "flex";
+  }
+}
+
+
+// ======================================================
+// CLOSE TICKET MODAL
+// ======================================================
+
+function closeTicketModal() {
+  const modal =
+    getElement("ticketModal");
+
+  if (modal) {
+    modal.style.display =
+      "none";
+  }
+}
+
+
+// ======================================================
+// CREATE TICKET
+// ======================================================
+
+async function createTicket() {
+  if (!selectedEvent) {
+    alert(
+      "No event selected."
+    );
+
+    return;
+  }
+
+  const eventId =
+    getEventId(selectedEvent);
+
+  if (
+    eventId === null ||
+    eventId === undefined ||
+    eventId === ""
+  ) {
+    const status =
+      getElement("ticketStatus");
+
+    if (status) {
+      status.innerText =
+        "Error: Selected event does not contain a valid event ID.";
+    }
+
+    return;
+  }
+
+  const department =
+    getElement("ticketDepartment")?.value || "";
+
+  const priority =
+    getElement("ticketPriority")?.value || "";
+
+  const notes =
+    getElement("ticketNotes")?.value || "";
+
+  const statusElement =
+    getElement("ticketStatus");
+
+  if (statusElement) {
+    statusElement.innerText =
+      "Creating ticket...";
+  }
+
+  const payload = {
+    event_id: eventId,
+    department: department,
+    priority: priority,
+    assigned_to: "",
+    notes: notes
+  };
+
+  try {
+    const response =
+      await fetch(
+        `${API_BASE}/api/tickets`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+    let result = {};
+
+    try {
+      result =
+        await response.json();
+    } catch (jsonError) {
+      result = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+        `Ticket API returned HTTP ${response.status}`
+      );
+    }
+
+    if (statusElement) {
+      statusElement.innerText =
+        `Ticket created successfully: ${
+          result.ticket_id ||
+          result.id ||
+          "Created"
+        }`;
+    }
+
+    setTimeout(() => {
+      closeTicketModal();
+      closeEventModal();
+    }, 1200);
+
+    await fetchImpactDashboard();
+
+  } catch (error) {
+    console.error(
+      "Ticket creation failed:",
+      error
+    );
+
+    if (statusElement) {
+      statusElement.innerText =
+        `Error: ${error.message}`;
+    }
+  }
+}
+
+
+// ======================================================
+// FETCH EVENTS
+// ======================================================
+
+async function fetchEvents() {
+  const response =
+    await fetch(
+      `${API_BASE}/api/events`
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Events API HTTP ${response.status}`
+    );
+  }
+
+  const events =
+    await response.json();
+
+  if (!Array.isArray(events)) {
+    throw new Error(
+      "Events API returned an invalid response."
+    );
+  }
+
+  allEvents =
+    events;
+
+  applyEventFilters();
 }
 
 
@@ -869,51 +1042,58 @@ async function fetchEvents() {
 // ======================================================
 
 async function fetchHeatmap() {
-
   const response =
     await fetch(
       `${API_BASE}/api/events/heatmap`
     );
 
+  if (!response.ok) {
+    throw new Error(
+      `Heatmap API HTTP ${response.status}`
+    );
+  }
 
   const points =
     await response.json();
 
+  if (!Array.isArray(points)) {
+    throw new Error(
+      "Heatmap API returned an invalid response."
+    );
+  }
 
   const heatPoints =
-    points.map(
-      point => [
-        point.latitude,
-        point.longitude,
-        point.weight
-      ]
-    );
-
+    points
+      .map(point => [
+        Number(point.latitude),
+        Number(point.longitude),
+        Number(point.weight ?? 1)
+      ])
+      .filter(point =>
+        Number.isFinite(point[0]) &&
+        Number.isFinite(point[1]) &&
+        Number.isFinite(point[2])
+      );
 
   if (heatLayer) {
-
     map.removeLayer(
       heatLayer
     );
-
   }
-
 
   heatLayer =
     L.heatLayer(
       heatPoints,
       {
-        radius: 25
+        radius: 25,
+        blur: 18,
+        maxZoom: 17
       }
     );
 
-
   if (heatVisible) {
-
     heatLayer.addTo(map);
-
   }
-
 }
 
 
@@ -922,34 +1102,33 @@ async function fetchHeatmap() {
 // ======================================================
 
 async function fetchStats() {
-
   const response =
     await fetch(
       `${API_BASE}/api/stats`
     );
 
+  if (!response.ok) {
+    throw new Error(
+      `Stats API HTTP ${response.status}`
+    );
+  }
 
   const stats =
     await response.json();
 
-
-  document.getElementById(
-    "statTotal"
-  ).innerText =
-    stats.total_events;
-
+  setText(
+    "statTotal",
+    stats.total_events ?? "—"
+  );
 
   const typeContainer =
-    document.getElementById(
-      "statByType"
-    );
+    getElement("statByType");
 
+  if (!typeContainer) {
+    return;
+  }
 
-  typeContainer.innerHTML =
-    "";
-
-
-  // Sort event types alphabetically
+  typeContainer.innerHTML = "";
 
   const sortedTypes =
     Object.entries(
@@ -959,50 +1138,50 @@ async function fetchStats() {
         a.localeCompare(b)
     );
 
-
   sortedTypes.forEach(
     ([type, count]) => {
-
       const row =
-        document.createElement(
-          "div"
-        );
-
+        document.createElement("div");
 
       row.className =
         "type-row";
 
+      const typeName =
+        document.createElement("span");
 
-      row.innerHTML = `
+      typeName.className =
+        "type-name";
 
-        <span class="type-name">
-          ${formatEventName(type)}
-        </span>
+      typeName.innerText =
+        formatEventName(type);
 
-        <span class="type-count">
-          ${count}
-        </span>
+      const typeCount =
+        document.createElement("span");
 
-      `;
+      typeCount.className =
+        "type-count";
 
+      typeCount.innerText =
+        count;
+
+      row.appendChild(
+        typeName
+      );
+
+      row.appendChild(
+        typeCount
+      );
 
       typeContainer.appendChild(
         row
       );
-
     }
   );
 
-
-  if (
-    sortedTypes.length === 0
-  ) {
-
-    typeContainer.innerText =
-      "-";
-
+  if (!sortedTypes.length) {
+    typeContainer.innerHTML =
+      `<span class="loading-state">No event type data available.</span>`;
   }
-
 }
 
 
@@ -1011,107 +1190,81 @@ async function fetchStats() {
 // ======================================================
 
 function toggleHeatmap() {
-
   heatVisible =
     !heatVisible;
 
+  const heatButton =
+    getElement("heatBtn");
 
-  document
-    .getElementById(
-      "heatBtn"
-    )
-    .classList
-    .toggle(
+  if (heatButton) {
+    heatButton.classList.toggle(
       "active",
       heatVisible
     );
-
+  }
 
   if (!heatLayer) {
-
     return;
-
   }
-
 
   if (heatVisible) {
-
-    heatLayer.addTo(
-      map
-    );
-
-  }
-  else {
-
+    heatLayer.addTo(map);
+  } else {
     map.removeLayer(
       heatLayer
     );
-
   }
-
 }
+
 
 // ======================================================
 // FETCH IMPACT DASHBOARD DATA
 // ======================================================
 
 async function fetchImpactDashboard() {
-  try {
-    const response = await fetch(`${API_BASE}/api/impact`);
-    if (response.ok) {
-      const impact = await response.json();
-      if (impact.buses_monitoring !== undefined) {
-        document.getElementById("impactBuses").innerText = impact.buses_monitoring;
-      }
-      if (impact.road_km_monitored !== undefined) {
-        document.getElementById("impactRoadKm").innerText = impact.road_km_monitored;
-      }
-      if (impact.issues_detected !== undefined) {
-        document.getElementById("impactIssues").innerText = impact.issues_detected;
-      }
-      if (impact.tickets_created !== undefined) {
-        document.getElementById("impactTickets").innerText = impact.tickets_created;
-      }
-      if (impact.issues_resolved !== undefined) {
-        document.getElementById("impactResolved").innerText = impact.issues_resolved;
-      }
-      if (impact.avg_response_time !== undefined) {
-        document.getElementById("impactResponse").innerText = impact.avg_response_time;
-      }
-      return;
-    }
-  } catch (error) {
-    console.warn("Impact API fetch error:", error.message);
+  const response =
+    await fetch(
+      `${API_BASE}/api/impact`
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Impact API HTTP ${response.status}`
+    );
   }
 
-  // Fallback to individual endpoint checks if /api/impact is unavailable
-  try {
-    const resEvents = await fetch(`${API_BASE}/api/events`);
-    if (resEvents.ok) {
-      const events = await resEvents.json();
-      document.getElementById("impactIssues").innerText = Array.isArray(events) ? events.length : "—";
-    }
-  } catch (e) {}
+  const impact =
+    await response.json();
 
-  try {
-    const resBuses = await fetch(`${API_BASE}/api/buses`);
-    if (resBuses.ok) {
-      const buses = await resBuses.json();
-      document.getElementById("impactBuses").innerText = Array.isArray(buses) ? buses.length : "—";
-    }
-  } catch (e) {}
+  setText(
+    "impactBuses",
+    impact.buses_monitoring ?? "—"
+  );
 
-  try {
-    const resTickets = await fetch(`${API_BASE}/api/tickets`);
-    if (resTickets.ok) {
-      const tickets = await resTickets.json();
-      if (Array.isArray(tickets)) {
-        document.getElementById("impactTickets").innerText = tickets.length;
-        const resolved = tickets.filter(t => String(t.status).toUpperCase() === "RESOLVED").length;
-        document.getElementById("impactResolved").innerText = resolved;
-      }
-    }
-  } catch (e) {}
+  setText(
+    "impactRoadKm",
+    impact.road_km_monitored ?? "—"
+  );
+
+  setText(
+    "impactIssues",
+    impact.issues_detected ?? "—"
+  );
+
+  setText(
+    "impactTickets",
+    impact.tickets_created ?? "—"
+  );
+
+  setText(
+    "impactResolved",
+    impact.issues_resolved ?? "—"
+  );
+
+  setText(
+    "impactResponse",
+    impact.avg_response_time ?? "—"
+  );
 }
 
 
@@ -1120,118 +1273,52 @@ async function fetchImpactDashboard() {
 // ======================================================
 
 async function fetchRoadHealth() {
-
-  try {
-
-    const response =
-      await fetch(`${API_BASE}/api/road-health`);
-
-    if (!response.ok) {
-
-      throw new Error(
-        `Road Health API error: ${response.status}`
-      );
-
-    }
-
-
-    const data =
-      await response.json();
-
-
-    if (data.road_health_score !== undefined) {
-
-      document.getElementById(
-        "roadHealthScore"
-      ).innerText =
-        `${data.road_health_score}/100`;
-
-    }
-    else {
-
-      document.getElementById(
-        "roadHealthScore"
-      ).innerText = "—";
-
-    }
-
-
-    if (data.total_hazards_30d !== undefined) {
-
-      document.getElementById(
-        "roadHazards"
-      ).innerText =
-        data.total_hazards_30d;
-
-    }
-    else {
-
-      document.getElementById(
-        "roadHazards"
-      ).innerText = "—";
-
-    }
-
-
-    if (data.trend) {
-
-      document.getElementById(
-        "roadTrend"
-      ).innerText =
-        String(data.trend).toUpperCase();
-
-    }
-    else {
-
-      document.getElementById(
-        "roadTrend"
-      ).innerText = "—";
-
-    }
-
-
-    if (data.recommendation) {
-
-      document.getElementById(
-        "roadRecommendation"
-      ).innerText =
-        data.recommendation;
-
-    }
-    else {
-
-      document.getElementById(
-        "roadRecommendation"
-      ).innerText = "—";
-
-    }
-
-  }
-  catch (error) {
-
-    console.warn(
-      "Road health data unavailable:",
-      error.message
+  const response =
+    await fetch(
+      `${API_BASE}/api/road-health`
     );
 
-    document.getElementById(
-      "roadHealthScore"
-    ).innerText = "—";
-
-    document.getElementById(
-      "roadHazards"
-    ).innerText = "—";
-
-    document.getElementById(
-      "roadTrend"
-    ).innerText = "—";
-
-    document.getElementById(
-      "roadRecommendation"
-    ).innerText = "—";
-
+  if (!response.ok) {
+    throw new Error(
+      `Road Health API HTTP ${response.status}`
+    );
   }
 
+  const data =
+    await response.json();
+
+  setText(
+    "roadHealthScore",
+    data.road_health_score !== undefined
+      ? `${data.road_health_score}/100`
+      : "—"
+  );
+
+  setText(
+    "roadHazards",
+    data.total_hazards_30d !== undefined
+      ? data.total_hazards_30d
+      : "—"
+  );
+
+  setText(
+    "roadTrend",
+    data.trend
+      ? String(data.trend).toUpperCase()
+      : "—"
+  );
+
+  setText(
+    "roadRecommendation",
+    data.recommendation || "—"
+  );
+
+  if (data.corridor) {
+    setText(
+      "roadCorridor",
+      data.corridor
+    );
+  }
 }
 
 
@@ -1240,140 +1327,188 @@ async function fetchRoadHealth() {
 // ======================================================
 
 async function fetchBuses() {
-
-  try {
-
-    const response =
-      await fetch(`${API_BASE}/api/buses`);
-
-    if (!response.ok) {
-
-      throw new Error(
-        `Buses API HTTP ${response.status}`
-      );
-
-    }
-
-
-    const buses =
-      await response.json();
-
-
-    busMarkersLayer.clearLayers();
-
-
-    if (Array.isArray(buses)) {
-
-      const impactBusesEl =
-        document.getElementById("impactBuses");
-
-      if (impactBusesEl) {
-
-        impactBusesEl.innerText =
-          buses.length;
-
-      }
-
-
-      buses.forEach(bus => {
-
-        if (
-          bus.latitude !== undefined &&
-          bus.longitude !== undefined
-        ) {
-
-          const busIcon =
-            L.divIcon({
-
-              className: "bus-marker-icon",
-
-              html: `
-                <div class="bus-marker-pin">
-                  <span class="bus-icon">🚌</span>
-                  <span>${bus.bus_id || "BUS"}</span>
-                </div>
-              `,
-
-              iconSize: [80, 26],
-
-              iconAnchor: [40, 13]
-
-            });
-
-
-          const statusText =
-            String(bus.status || "active").toUpperCase();
-
-
-          const marker =
-            L.marker(
-              [
-                bus.latitude,
-                bus.longitude
-              ],
-              {
-                icon: busIcon
-              }
-            );
-
-
-          marker.bindTooltip(
-            `<b>${bus.bus_id || "BUS"}</b><br>Route: ${bus.route || "—"}<br>Status: ${statusText}`
-          );
-
-
-          marker.addTo(
-            busMarkersLayer
-          );
-
-        }
-
-      });
-
-    }
-
-  }
-  catch (error) {
-
-    console.warn(
-      "Could not load bus locations:",
-      error.message
+  const response =
+    await fetch(
+      `${API_BASE}/api/buses`
     );
 
-    busMarkersLayer.clearLayers();
-
+  if (!response.ok) {
+    throw new Error(
+      `Buses API HTTP ${response.status}`
+    );
   }
 
+  const buses =
+    await response.json();
+
+  if (!Array.isArray(buses)) {
+    throw new Error(
+      "Buses API returned an invalid response."
+    );
+  }
+
+  busMarkersLayer.clearLayers();
+
+  const impactBuses =
+    getElement("impactBuses");
+
+  if (impactBuses) {
+    impactBuses.innerText =
+      buses.length;
+  }
+
+  buses.forEach(bus => {
+    const latitude =
+      Number(bus.latitude);
+
+    const longitude =
+      Number(bus.longitude);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return;
+    }
+
+    const busId =
+      bus.bus_id || "BUS";
+
+    const busIcon =
+      L.divIcon({
+        className:
+          "bus-marker-icon",
+
+        html: `
+          <div class="bus-marker-pin">
+            <span class="bus-icon">🚌</span>
+            <span>${busId}</span>
+          </div>
+        `,
+
+        iconSize: [80, 26],
+
+        iconAnchor: [40, 13]
+      });
+
+    const statusText =
+      String(
+        bus.status || "active"
+      ).toUpperCase();
+
+    const marker =
+      L.marker(
+        [latitude, longitude],
+        {
+          icon: busIcon
+        }
+      );
+
+    marker.bindTooltip(
+      `<b>${busId}</b><br>` +
+      `Route: ${bus.route || "—"}<br>` +
+      `Status: ${statusText}`
+    );
+
+    marker.addTo(
+      busMarkersLayer
+    );
+  });
 }
 
 
 // ======================================================
-// BACKEND STATUS UI HELPER
+// BACKEND STATUS UI
 // ======================================================
 
-function updateBackendStatusUI(status, label) {
-  const pulseEl = document.getElementById("backendPulse");
-  const labelEl = document.getElementById("backendStatusLabel");
-  if (!pulseEl || !labelEl) return;
+function updateBackendStatusUI(
+  status,
+  label
+) {
+  const pulseEl =
+    getElement("backendPulse");
 
-  pulseEl.className = "pulse-dot " + status;
-  let hostStr = "";
+  const labelEl =
+    getElement("backendStatusLabel");
+
+  if (!pulseEl || !labelEl) {
+    return;
+  }
+
+  pulseEl.className =
+    `pulse-dot ${status}`;
+
+  let hostStr =
+    API_BASE;
+
   try {
-    const u = new URL(API_BASE);
-    hostStr = u.host;
-  } catch (e) {
-    hostStr = API_BASE;
+    const url =
+      new URL(API_BASE);
+
+    hostStr =
+      url.host;
+  } catch (error) {
+    // Keep API_BASE when it is not a valid URL.
   }
 
   if (status === "online") {
-    labelEl.textContent = `ONLINE (${hostStr})`;
-    labelEl.style.color = "#34d399";
+    labelEl.textContent =
+      `ONLINE (${hostStr})`;
+
+    labelEl.style.color =
+      "#22a06b";
+
   } else if (status === "waking") {
-    labelEl.textContent = label || "WAKING UP (Render cold start)...";
-    labelEl.style.color = "#fbbf24";
+    labelEl.textContent =
+      label ||
+      "WAKING UP...";
+
+    labelEl.style.color =
+      "#d99100";
+
   } else {
-    labelEl.textContent = label || `OFFLINE (${hostStr})`;
-    labelEl.style.color = "#f87171";
+    labelEl.textContent =
+      label ||
+      `OFFLINE (${hostStr})`;
+
+    labelEl.style.color =
+      "#d64545";
+  }
+}
+
+
+// ======================================================
+// SAFE API CALL WRAPPER
+// ======================================================
+//
+// Each dashboard section is allowed to fail independently.
+// One broken endpoint will not prevent the other sections
+// from loading.
+// ======================================================
+
+async function runDashboardRequest(
+  name,
+  request
+) {
+  try {
+    await request();
+
+    return {
+      name,
+      success: true
+    };
+
+  } catch (error) {
+    console.warn(
+      `${name} unavailable:`,
+      error.message
+    );
+
+    return {
+      name,
+      success: false,
+      error
+    };
   }
 }
 
@@ -1383,27 +1518,115 @@ function updateBackendStatusUI(status, label) {
 // ======================================================
 
 async function fetchAll() {
-  const wakingTimer = setTimeout(() => {
-    updateBackendStatusUI("waking", "WAKING UP (Render cold start)...");
-  }, 2500);
-
-  try {
-    await Promise.all([
-      fetchEvents(),
-      fetchHeatmap(),
-      fetchStats(),
-      fetchImpactDashboard(),
-      fetchRoadHealth(),
-      fetchBuses()
-    ]);
-    clearTimeout(wakingTimer);
-    updateBackendStatusUI("online");
-  } catch (error) {
-    clearTimeout(wakingTimer);
-    console.error("Dashboard error:", error);
-    updateBackendStatusUI("offline");
+  if (isFetching) {
+    return;
   }
+
+  isFetching =
+    true;
+
+  const wakingTimer =
+    setTimeout(() => {
+      updateBackendStatusUI(
+        "waking",
+        "WAKING UP..."
+      );
+    }, 2500);
+
+  const results =
+    await Promise.all([
+      runDashboardRequest(
+        "Events",
+        fetchEvents
+      ),
+
+      runDashboardRequest(
+        "Heatmap",
+        fetchHeatmap
+      ),
+
+      runDashboardRequest(
+        "Stats",
+        fetchStats
+      ),
+
+      runDashboardRequest(
+        "Impact",
+        fetchImpactDashboard
+      ),
+
+      runDashboardRequest(
+        "Road Health",
+        fetchRoadHealth
+      ),
+
+      runDashboardRequest(
+        "Buses",
+        fetchBuses
+      )
+    ]);
+
+  clearTimeout(
+    wakingTimer
+  );
+
+  const eventsResult =
+    results.find(
+      result =>
+        result.name === "Events"
+    );
+
+  const successfulRequests =
+    results.filter(
+      result =>
+        result.success
+    ).length;
+
+  const totalRequests =
+    results.length;
+
+  if (
+    successfulRequests ===
+    totalRequests
+  ) {
+    updateBackendStatusUI(
+      "online"
+    );
+
+  } else if (
+    successfulRequests > 0
+  ) {
+    updateBackendStatusUI(
+      "waking",
+      `PARTIAL DATA (${successfulRequests}/${totalRequests})`
+    );
+
+  } else {
+    updateBackendStatusUI(
+      "offline"
+    );
+  }
+
+  if (
+    eventsResult &&
+    !eventsResult.success &&
+    allEvents.length === 0
+  ) {
+    renderEventMarkers([]);
+
+    renderEventFeed([]);
+  }
+
+  isFetching =
+    false;
 }
+
+
+// ======================================================
+// INITIALIZE FILTERS
+// ======================================================
+
+initializeFilters();
 
 
 // ======================================================
@@ -1413,7 +1636,12 @@ async function fetchAll() {
 fetchAll();
 
 
-// Keep existing live polling.
+// ======================================================
+// LIVE POLLING
+// ======================================================
+//
+// Keep the dashboard synchronized with backend changes.
+// ======================================================
 
 setInterval(
   fetchAll,
@@ -1425,41 +1653,52 @@ setInterval(
 // CLOSE MODALS WHEN CLICKING OUTSIDE
 // ======================================================
 
-document
-  .getElementById(
-    "eventModal"
-  )
-  .addEventListener(
+const eventModal =
+  getElement("eventModal");
+
+if (eventModal) {
+  eventModal.addEventListener(
     "click",
     function(event) {
-
       if (
         event.target === this
       ) {
-
         closeEventModal();
-
       }
-
     }
   );
+}
 
 
-document
-  .getElementById(
-    "ticketModal"
-  )
-  .addEventListener(
+const ticketModal =
+  getElement("ticketModal");
+
+if (ticketModal) {
+  ticketModal.addEventListener(
     "click",
     function(event) {
-
       if (
         event.target === this
       ) {
-
         closeTicketModal();
-
       }
-
     }
   );
+}
+
+
+// ======================================================
+// ESCAPE KEY — CLOSE MODALS
+// ======================================================
+
+document.addEventListener(
+  "keydown",
+  function(event) {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    closeEventModal();
+    closeTicketModal();
+  }
+);
