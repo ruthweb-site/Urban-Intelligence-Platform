@@ -156,7 +156,13 @@ def make_vehicle_payload(
             "count": detect_res["total_count"],
             "breakdown": detect_res["breakdown"],
             "density": detect_res["density"],
-            "route_id": route_id
+            "route_id": route_id,
+            "cars": detect_res["breakdown"].get("car", 0),
+            "motorcycles": detect_res["breakdown"].get("bike", 0),
+            "buses": detect_res["breakdown"].get("bus", 0),
+            "trucks": detect_res["breakdown"].get("truck", 0),
+            "total": detect_res["total_count"],
+            "traffic_density": detect_res["density"]
         }
     }
 
