@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/bus-monitor",   "destination": "/bus-monitor.html" },
-    { "source": "/bus_monitor",   "destination": "/bus-monitor.html" },
-    { "source": "/analytics",     "destination": "/analytics.html" }
+    { "source": "/analytics",    "destination": "/analytics.html" },
+    { "source": "/bus-monitor",  "destination": "/bus-monitor.html" },
+    { "source": "/bus_monitor",  "destination": "/bus-monitor.html" }
   ]
 }
