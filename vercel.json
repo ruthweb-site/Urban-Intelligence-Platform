@@ -1,16 +1,33 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/bus-monitor", "destination": "/bus-monitor.html" },
-    { "source": "/bus_monitor", "destination": "/bus-monitor.html" },
-    { "source": "/frontend/pages/bus-monitor", "destination": "/bus-monitor.html" },
-    { "source": "/frontend/pages/bus-monitor.html", "destination": "/bus-monitor.html" },
-    { "source": "/frontend/pages/bus_monitor.html", "destination": "/bus-monitor.html" },
-    { "source": "/frontend/pages/index.html", "destination": "/index.html" },
-    { "source": "/frontend/pages/style.css", "destination": "/style.css" },
-    { "source": "/frontend/pages/script.js", "destination": "/script.js" },
-    { "source": "/frontend/pages/config.js", "destination": "/config.js" },
-    { "source": "/frontend/pages/pothole.jpg", "destination": "/pothole.jpg" },
+    { "source": "/",                               "destination": "/index.html" },
+
+    { "source": "/bus-monitor",                    "destination": "/bus-monitor.html" },
+    { "source": "/bus_monitor",                    "destination": "/bus-monitor.html" },
+    { "source": "/bus-monitor.html",               "destination": "/bus-monitor.html" },
+    { "source": "/bus_monitor.html",               "destination": "/bus-monitor.html" },
+
+    { "source": "/analytics",                      "destination": "/analytics.html" },
+    { "source": "/analytics.html",                 "destination": "/analytics.html" },
+
+    { "source": "/frontend/pages/bus-monitor",     "destination": "/bus-monitor.html" },
+    { "source": "/frontend/pages/bus-monitor.html","destination": "/bus-monitor.html" },
+    { "source": "/frontend/pages/bus_monitor.html","destination": "/bus-monitor.html" },
+    { "source": "/frontend/pages/analytics",       "destination": "/analytics.html" },
+    { "source": "/frontend/pages/analytics.html",  "destination": "/analytics.html" },
+    { "source": "/frontend/pages/index.html",      "destination": "/index.html" },
+    { "source": "/frontend/pages/style.css",       "destination": "/style.css" },
+    { "source": "/frontend/pages/script.js",       "destination": "/script.js" },
+    { "source": "/frontend/pages/config.js",       "destination": "/config.js" },
+    { "source": "/frontend/pages/analytics.css",   "destination": "/analytics.css" },
+    { "source": "/frontend/pages/analytics.js",    "destination": "/analytics.js" },
+    { "source": "/frontend/pages/bus_monitor.css", "destination": "/bus_monitor.css" },
+    { "source": "/frontend/pages/bus_monitor.js",  "destination": "/bus_monitor.js" },
+    { "source": "/frontend/pages/pothole.jpg",     "destination": "/pothole.jpg" },
+    { "source": "/frontend/pages/anpr_alert.jpg",  "destination": "/anpr_alert.jpg" },
+    { "source": "/frontend/pages/vehicle_congestion.jpg", "destination": "/vehicle_congestion.jpg" },
     { "source": "/frontend/pages/bus_camera.mp4.mp4", "destination": "/bus_camera.mp4.mp4" }
-  ]
+  ],
+  "public": "frontend/pages"
 }

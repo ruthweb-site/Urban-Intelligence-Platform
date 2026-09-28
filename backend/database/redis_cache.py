@@ -2,7 +2,12 @@
 Redis Cache Layer for Urban Intelligence Platform
 Handles caching of events, tickets, stats, and analytics
 """
-import redis
+try:
+    import redis
+    has_redis = True
+except ImportError:
+    redis = None
+    has_redis = False
 import json
 import logging
 from datetime import datetime, timezone
@@ -24,6 +29,10 @@ class RedisCache:
     
     def __init__(self):
         """Initialize Redis connection pool"""
+        self.redis_client = None
+        if not has_redis:
+            logger.warning("[Redis] redis module not installed — cache disabled, falling back to direct DB queries")
+            return
         try:
             self.pool = redis.ConnectionPool(
                 host=REDIS_HOST,
@@ -44,8 +53,8 @@ class RedisCache:
             # Test connection
             self.redis_client.ping()
             logger.info("[Redis] Connected successfully")
-        except redis.ConnectionError as e:
-            logger.error(f"[Redis] Connection failed: {e}")
+        except Exception as e:
+            logger.warning(f"[Redis] Connection failed: {e} — cache disabled, falling back to direct DB queries")
             self.redis_client = None
 
     def is_connected(self) -> bool:
